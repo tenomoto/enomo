@@ -5,7 +5,7 @@ module sphere_module
 	private
 
 	public :: sphere_xy2lon, sphere_lonlat2xyz, sphere_uv2xyz, sphere_xyz2uv, &
-            sphere_lon2i, sphere_lat2j, sphere_lat2jg, &
+            sphere_lon2i, sphere_lat2j, sphere_lat2jg, sphere_j2j, sphere_ij2i, &
             sphere_orthodrome, sphere_cosine, sphere_trcosine, sphere_sine 
 
 contains
@@ -118,6 +118,39 @@ contains
     j = floor(0.5_dp*(ny+1.0_dp+(2.0_dp*ny+1.0_dp)*lat*pir)) ! lat = (-J-1+2j)pi/(2J+1)
 
 	end function sphere_lat2jg
+
+  function sphere_j2j(j,ny) result(jout)
+  ! returns 1<=jout<=ny from j that could be beyond poles (j<1, j>ny).
+    implicit none
+
+    integer(kind=i4b), intent(in) :: j, ny
+    integer(kind=i4b) :: jout
+
+    if (j<1) then
+      jout = 1 - j
+    else if (j>ny) then
+      jout = ny + (ny-j) + 1
+    else
+      jout = j
+    end if
+
+  end function sphere_j2j
+
+  function sphere_ij2i(i, j, nx, ny) result(iout)
+  ! returns 1<=iout<=ny from i that could be i>nx and 
+  !                          j that could be beyond poles (j<1, j>ny).
+    implicit none
+
+    integer(kind=i4b), intent(in) :: i, j, nx, ny
+    integer(kind=i4b) :: iout
+
+    if ((j<1).or.(j>ny)) then
+      iout = i+sign(nx/2,nx/2-i) ! i+nx/2 (i<=nx/2), i-nx/2 (i>nx/2)
+    else
+      iout = mod(i-1,nx)+1
+    end if
+      
+  end function sphere_ij2i
 
 	function sphere_orthodrome(lon1, lat1, lon2, lat2) result(l)
 	! returns the shortest distance between two points on the unit sphere
