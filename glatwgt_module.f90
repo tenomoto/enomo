@@ -29,7 +29,7 @@ contains
 
 ! Public procedures
 
-  subroutine glatwgt_calc(x,w,jMax)
+  subroutine glatwgt_calc(x,w,ny)
     use math_module, only: pi=>math_pi, pih=>math_pih
     implicit none
   
@@ -38,11 +38,16 @@ contains
 ! NB. Gaussian colatitudes are used during calculation
 
     real(kind=dp), dimension(:), intent(out) :: x, w
-    integer(kind=i4b), intent(in) :: jMax
+    integer(kind=i4b), intent(in), optional :: ny
 
-    integer(kind=i4b) :: l, j, jj=1
+    integer(kind=i4b) :: l, j, jj=1, jMax
     real(kind=dp) :: guess, pn, dpn, pn_max=0.0_dp, s
 
+    if (present(ny)) then
+      jMax = ny
+    else
+      jMax = min(size(x),size(w))
+    end if
     jMid = jMax/2
 
     call legendre_init()

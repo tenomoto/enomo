@@ -9,7 +9,7 @@ module math_module
   complex(kind=dpc), parameter, public :: &
     math_i = (0.0_dp,1.0_dp)
 
-  public :: math_arg
+  public :: math_atan2, math_arg
 
 contains
 
@@ -18,11 +18,21 @@ contains
 
     complex(kind=dpc), intent(in) :: z
     real(kind=dp) :: theta
-
+ 
     real(kind=dp) :: x, y
 
     x = real(z,kind=dp)
     y = aimag(z)
+
+    theta = math_atan2(y,x)
+
+  end function math_arg
+  
+  function math_atan2(y,x) result(theta)
+    implicit none
+
+    real(kind=dp), intent(in) :: x, y
+    real(kind=dp) :: theta
 
     if ((x/=0.0_dp).and.(y/=0.0_dp)) then
       theta = atan2(y,x)
@@ -45,6 +55,6 @@ contains
 			end if 
     end if
 
-  end function math_arg
+  end function math_atan2
 
 end module math_module
