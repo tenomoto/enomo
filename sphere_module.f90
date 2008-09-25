@@ -4,9 +4,10 @@ module sphere_module
 	use math_module, only: pi=>math_pi, pi2=>math_pi2, pih=>math_pih, pir=>math_pir
 	private
 
-	public :: sphere_xy2lon, sphere_lonlat2xyz, sphere_uv2xyz, sphere_xyz2uv, &
+	public :: sphere_xy2lon, sphere_lonlat2xyz, sphere_uv2xyz, sphere_xyz2uv,     &
             sphere_lon2i, sphere_lat2j, sphere_lat2jg, sphere_j2j, sphere_ij2i, &
-            sphere_orthodrome, sphere_cosine, sphere_trcosine, sphere_sine 
+            sphere_orthodrome, sphere_cosine, sphere_trcosine, sphere_sine,     &
+            sphere_lat2y, sphere_y2lat
 
 contains
 
@@ -194,4 +195,26 @@ contains
 
    end function sphere_trcosine
 
+! mercator projection
+   function sphere_lat2y(lat) result(y)
+     implicit none
+
+     real(kind=dp), intent(in) :: lat
+     real(kind=dp) :: y
+
+     y = log(tan(0.5_dp*(pih+lat)))
+
+   end function sphere_lat2y
+
+   function sphere_y2lat(y) result(lat)
+     implicit none
+
+     real(kind=dp), intent(in) :: y
+     real(kind=dp) :: lat
+
+     lat = 2.0_dp*atan(exp(y)) - pih
+
+   end function sphere_y2lat
+
 end module sphere_module
+
