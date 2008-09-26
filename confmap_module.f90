@@ -114,7 +114,7 @@ contains
 
   end function confmap_midpoint
 
-  subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate, mr)
+  subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate, m)
     use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2
     implicit none
 
@@ -122,7 +122,7 @@ contains
     complex(kind=dp), intent(in) :: a, b, c
 
     integer(kind=i4b) :: nx, ny, i, j
-    real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, mr
+    real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, m
 
     real(kind=dp) :: lonb, colatb, det
     complex(kind=dp) :: w, z, ai, bi, ci, di
@@ -141,15 +141,15 @@ contains
         lone(:,j) = lonb
         colate(:,j) = colatb
         if (colatb==pi) then
-          mr(:,j) = 1.0_dp
+          m(:,j) = 1.0_dp
         else
-          mr(:,j) = 0.0_dp
+          m(:,j) = 0.0_dp
         end if
       else
         do i=1, nx
           w = confmap_stereo(lon(i),colat(j))
           z = confmap_linear(w,ai,bi,ci,di)
-          mr(i,j) = (1.0_dp+abs(z)**2)/(1.0_dp+abs(w)**2)*abs((ci*w+di)**2/det)
+          m(i,j) = (1.0_dp+abs(z)**2)/(1.0_dp+abs(w)**2)*abs((ci*w+di)**2/det)
           call confmap_invstereo(z,lone(i,j),colate(i,j)) 
           if (lone(i,j)<0) then
             lone(i,j) = lone(i,j) + pi2
