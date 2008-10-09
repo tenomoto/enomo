@@ -3,9 +3,10 @@ module math_module
   implicit none
 
   real(kind=dp), parameter, public :: &
-    math_pi  = 3.141592653589793, &
-    math_pi2 = 2.0_dp*math_pi, math_pih = 0.5_dp*math_pi, math_pir = 1.0_dp/math_pi, &
-    math_deg2rad = math_pi/180.0_dp, math_rad2deg = 180.0_dp*math_pir
+    math_pi  = 3.141592653589793, math_pi2 = 2.0_dp*math_pi, &
+    math_pih = 0.5_dp*math_pi, math_pir = 1.0_dp/math_pi, &
+    math_deg2rad = math_pi/180.0_dp, math_rad2deg = 180.0_dp*math_pir, &
+    math_undef = -9.99e33_dp, math_inf = 9.99e33_dp
   complex(kind=dpc), parameter, public :: &
     math_i = (0.0_dp,1.0_dp)
 
@@ -48,7 +49,7 @@ contains
         theta = 0.0_dp
 			end if
     else if (y==0.0_dp) then
-			if (x>0.0_dp) then
+			if (x>=0.0_dp) then
 				theta = 0.0_dp
 			else
 				theta = math_pi

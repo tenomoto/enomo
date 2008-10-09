@@ -10,7 +10,9 @@ module confmap_module
 ! Couriter and Geleyn (1988) QJRMS
 
 ! History
-! 2008-9-18 Takeshi Enomoto <eno@jamstec.go.jp>
+! 2008-10-08 Takeshi Enomoto <eno@jamstec.go.jp>
+! * allows the South Pole at either a, b, c
+! 2008-09-18 Takeshi Enomoto <eno@jamstec.go.jp>
 ! * first version
 
   public :: confmap_stereo, confmap_invstereo, confmap_linear, &
@@ -20,36 +22,53 @@ module confmap_module
 contains
 
   function confmap_stereo(lon, colat) result(z)
-    use math_module, only: math_i
+    use math_module, only: math_i, math_inf, math_pi
     implicit none
 
     real(kind=dp), intent(in) :: lon, colat
     complex(kind=dpc) :: z
 
 ! 0<=colat<pi
-    z = tan(0.5_dp*colat)*exp(math_i*lon)
+    if (colat < math_pi) then
+      z = tan(0.5_dp*colat)*exp(math_i*lon)
+    else
+      z = math_inf
+    end if
      
   end function confmap_stereo
 
   subroutine confmap_invstereo(z,lon,colat)
-	  use math_module, only: math_arg
+	  use math_module, only: math_arg, math_inf, math_pi
     implicit none
 
     complex(kind=dpc), intent(in) :: z
     real(kind=dp), intent(out) :: lon, colat
 
-    lon = math_arg(z)
-    colat = 2.0_dp*atan(abs(z))
+    if (z/=math_inf) then
+      lon = math_arg(z)
+      colat = 2.0_dp*atan(abs(z))
+    else
+      lon = 0.0_dp
+      colat = math_pi
+    end if
 
   end subroutine confmap_invstereo 
 
   function confmap_linear(z,a,b,c,d) result (w)
+    use math_module, only: math_inf
     implicit none
 
     complex(kind=dpc), intent(in) :: z, a, b, c, d
     complex(kind=dpc) :: w
 
-    w = (a*z+b)/(c*z+d)
+    complex(kind=dpc) :: denom
+
+    denom = c*z + d
+    if (abs(denom)==0.0_dp) then
+      w = math_inf
+    else
+      w = (a*z+b)/denom
+    end if
  
   end function confmap_linear
 
@@ -115,7 +134,7 @@ contains
   end function confmap_midpoint
 
   subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate, m)
-    use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2
+    use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2, math_inf
     implicit none
 
     real(kind=dp), dimension(:), intent(in) :: lon, colat
@@ -124,32 +143,61 @@ contains
     integer(kind=i4b) :: nx, ny, i, j
     real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, m
 
-    real(kind=dp) :: lonb, colatb, det
-    complex(kind=dp) :: w, z, ai, bi, ci, di
+    real(kind=dp) :: lonb, colatb
+    complex(kind=dp) :: w, z, ai, bi, ci, di, det
 
     nx = size(lon)
     ny = size(colat)
 
-    ai =  b*(c-a) ! -d
-    bi = -a*(c-b) !  b
-    ci =    (c-a) !  c
-    di =   -(c-b) ! -a
-    det = (c-b)*(c-a)*(a-b) ! ad-bc
+    if ((a/=math_inf).and.(b/=math_inf).and.(c/=math_inf)) then
+      ai =  b*(c-a) ! -d
+      bi = -a*(c-b) !  b
+      ci =    (c-a) !  c
+      di =   -(c-b) ! -a
+      det = (c-b)*(c-a)*(a-b) ! ad-bc
+    else if (a==math_inf) then
+      ai = b
+      bi = c-b
+      ci = 1.0_dp
+      di = 0.0_dp
+      det = -(c-b)
+    else if (b==math_inf) then
+      ai = -(c-a)
+      bi = -a
+      ci =  0.0_dp
+      di = -1.0_dp
+      det = c-a
+    else if (c==math_inf) then
+      ai =  b
+      bi = -a
+      ci =  1.0_dp
+      di = -1.0_dp
+      det = -b+a
+    else
+      print *, "Invalid a, b, or c"
+      stop
+    end if
     do j=1, ny
       if (colat(j)==pi) then
         call confmap_invstereo(b,lonb,colatb) 
         lone(:,j) = lonb
         colate(:,j) = colatb
-        if (colatb==pi) then
-          m(:,j) = 1.0_dp
+        if (b/=math_inf) then
+          m(:,j) = (1.0_dp+abs(b)**2)*abs(ci/det)
         else
-          m(:,j) = 0.0_dp
+          m(:,j) = 1.0_dp
         end if
       else
         do i=1, nx
           w = confmap_stereo(lon(i),colat(j))
           z = confmap_linear(w,ai,bi,ci,di)
-          m(i,j) = (1.0_dp+abs(z)**2)/(1.0_dp+abs(w)**2)*abs((ci*w+di)**2/det)
+          if ((a==math_inf).and.(abs(w)==0.0_dp)) then
+            m(i,j) = abs(det)
+          else if ((c==math_inf).and.(abs(w-1.0_dp)==0.0_dp)) then
+            m(i,j) = 0.5_dp*abs(det)
+          else
+            m(i,j) = (1.0_dp+abs(z)**2)/(1.0_dp+abs(w)**2)*abs((ci*w+di)**2/det)
+          end if
           call confmap_invstereo(z,lone(i,j),colate(i,j)) 
           if (lone(i,j)<0) then
             lone(i,j) = lone(i,j) + pi2
