@@ -17,7 +17,7 @@ module confmap_module
 
   public :: confmap_stereo, confmap_invstereo, confmap_linear, &
             confmap_grid2earth, confmap_antipode, confmap_eqcolat, &
-            confmap_midpoint
+            confmap_midpoint, confmap_m, confmap_cmurray
 
 contains
 
@@ -133,7 +133,7 @@ contains
 
   end function confmap_midpoint
 
-  subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate, m)
+  subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate)
     use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2, math_inf
     implicit none
 
@@ -141,10 +141,10 @@ contains
     complex(kind=dp), intent(in) :: a, b, c
 
     integer(kind=i4b) :: nx, ny, i, j
-    real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, m
+    real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate
 
     real(kind=dp) :: lonb, colatb
-    complex(kind=dp) :: w, z, ai, bi, ci, di, det
+    complex(kind=dp) :: w, z, ai, bi, ci, di
 
     nx = size(lon)
     ny = size(colat)
@@ -154,25 +154,21 @@ contains
       bi = -a*(c-b) !  b
       ci =    (c-a) !  c
       di =   -(c-b) ! -a
-      det = (c-b)*(c-a)*(a-b) ! ad-bc
     else if (a==math_inf) then
       ai = b
       bi = c-b
       ci = 1.0_dp
       di = 0.0_dp
-      det = -(c-b)
     else if (b==math_inf) then
       ai = -(c-a)
       bi = -a
       ci =  0.0_dp
       di = -1.0_dp
-      det = c-a
     else if (c==math_inf) then
       ai =  b
       bi = -a
       ci =  1.0_dp
       di = -1.0_dp
-      det = -b+a
     else
       print *, "Invalid a, b, or c"
       stop
@@ -182,24 +178,12 @@ contains
         call confmap_invstereo(b,lonb,colatb) 
         lone(:,j) = lonb
         colate(:,j) = colatb
-        if (b/=math_inf) then
-          m(:,j) = (1.0_dp+abs(b)**2)*abs(ci/det)
-        else
-          m(:,j) = 1.0_dp
-        end if
       else
         do i=1, nx
           w = confmap_stereo(lon(i),colat(j))
           z = confmap_linear(w,ai,bi,ci,di)
-          if ((a==math_inf).and.(abs(w)==0.0_dp)) then
-            m(i,j) = abs(det)
-          else if ((c==math_inf).and.(abs(w-1.0_dp)==0.0_dp)) then
-            m(i,j) = 0.5_dp*abs(det)
-          else
-            m(i,j) = (1.0_dp+abs(z)**2)/(1.0_dp+abs(w)**2)*abs((ci*w+di)**2/det)
-          end if
           call confmap_invstereo(z,lone(i,j),colate(i,j)) 
-          if (lone(i,j)<0) then
+          if (lone(i,j)<0.0_dp) then
             lone(i,j) = lone(i,j) + pi2
           end if
         end do
@@ -208,4 +192,33 @@ contains
 
   end subroutine confmap_grid2earth
 
+  subroutine confmap_m(c, a, b)
+    implicit none
+
+    real(kind=dp), intent(in) :: c ! magnification
+    real(kind=dp), intent(out) :: a, b ! coefficient for wave number 0 and 1
+
+    real(kind=dp) :: cr
+
+    cr = 1.0_dp/c
+
+    a = 0.5_dp*(c+cr)
+    b = 0.5_dp*(c-cr)
+
+  end subroutine confmap_m
+
+  function confmap_cmurray(lona,colata,lonb,colatb) result(c)
+    use sphere_module, only: sphere_cosine
+    implicit none
+
+    real(kind=dp), intent(in) :: lona, colata, lonb, colatb
+    real(kind=dp) :: c
+
+    c = sphere_cosine(cos(colata),cos(colatb),sin(colata),sin(colatb),cos(lona-lonb))
+    c = sqrt(0.5_dp*(1.0_dp+c))
+    c = sqrt((1.0_dp+c)/(1.0_dp-c))
+
+  end function confmap_cmurray
+
 end module confmap_module
+

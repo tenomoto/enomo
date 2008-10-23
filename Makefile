@@ -36,5 +36,5 @@ slp_module.o : type_module.o earth_module.o air_module.o
 sphere_module.o : type_module.o math_module.o
 glatwgt_module.o : type_module.o math_module.o
 interpolate_module.o : type_module.o math_module.o
-confmap_module.o : type_module.o math_module.o
+confmap_module.o : type_module.o math_module.o sphere_module.o
 
