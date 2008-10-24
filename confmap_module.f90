@@ -134,7 +134,7 @@ contains
   end function confmap_midpoint
 
   subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate, alpha)
-    use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2, math_inf, math_arg
+    use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2, math_inf, math_arg, rad2deg=>math_rad2deg
     implicit none
 
     real(kind=dp), dimension(:), intent(in) :: lon, colat
@@ -143,8 +143,8 @@ contains
     integer(kind=i4b) :: nx, ny, i, j
     real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, alpha
 
-    real(kind=dp) :: lonb, colatb
-    complex(kind=dp) :: w, z, ai, bi, ci, di, det
+    real(kind=dp) :: lona, colata, lonb, colatb
+    complex(kind=dp) :: w, z, ai, bi, ci, di, det, detr
 
     nx = size(lon)
     ny = size(colat)
@@ -154,41 +154,54 @@ contains
       bi = -a*(c-b) !  b
       ci =    (c-a) !  c
       di =   -(c-b) ! -a
-      det = (c-a)*(c-b)*(a-b)
     else if (a==math_inf) then
       ai = b
       bi = c-b
       ci = 1.0_dp
       di = 0.0_dp
-      det = -(c-b)
     else if (b==math_inf) then
       ai = -(c-a)
       bi = -a
       ci =  0.0_dp
       di = -1.0_dp
-      det = c-a
     else if (c==math_inf) then
       ai =  b
       bi = -a
       ci =  1.0_dp
       di = -1.0_dp
-      det = -b+a
     else
       print *, "Invalid a, b, or c"
       stop
     end if
+    det = ai*di-bi*ci
+    detr = -ai*bi+ci*di
+print *, "arg(det)=", math_arg(det/(di*di))*rad2deg, " arg(detr)=", math_arg(detr/(bi*bi))*rad2deg
     do j=1, ny
       if (colat(j)==pi) then
         call confmap_invstereo(b,lonb,colatb) 
+        call confmap_invstereo(a,lona,colata) 
         lone(:,j) = lonb
         colate(:,j) = colatb
+        if ((colatb/=0.0_dp).and.(colatb/=pi)) then
+!          if ((modulo(abs(lona-lonb),pi)<1.0e-5_dp).and.(pi-colatb-colata<1.0e-5_dp)) then
+!            alpha(:,j) = modulo(lon(:)+math_arg(detr/(bi**2))-lonb,pi2)
+!          else
+            alpha(:,j) = modulo(pi-lon(:)-math_arg(detr/(bi**2))+lonb,pi2)
+!          end if
+        else
+          alpha(:,j) = 0.0_dp
+        end if
       else
         do i=1, nx
           w = confmap_stereo(lon(i),colat(j))
           z = confmap_linear(w,ai,bi,ci,di)
           call confmap_invstereo(z,lone(i,j),colate(i,j)) 
           lone(i,j) = modulo(lone(i,j),pi2)
-          alpha(i,j) = modulo(lon(i)+math_arg(det/((ci*w+di)**2))-lone(i,j),pi2)
+          if ((colate(i,j)/=0.0_dp).and.(colate(i,j)/=pi)) then
+            alpha(i,j) = modulo(lon(i)+math_arg(det/((ci*w+di)**2))-lone(i,j),pi2)
+          else
+            alpha(i,j) = modulo(math_arg(det/((ci*w+di)**2)),pi2)
+          end if
         end do
       end if
     end do
