@@ -91,17 +91,17 @@ contains
 
   end function confmap_antipode
 
-  function confmap_eqcolat(lona,colata,alpha) result(c)
+  function confmap_eqcolat(lona,colata,n) result(c)
     use math_module, only: pi=>math_pi
     implicit none
 
-    real(kind=dp), intent(in) :: lona,colata, alpha 
+    real(kind=dp), intent(in) :: lona, colata, n
     complex(kind=dpc) :: c
 
     real(kind=dp) :: lonc, colatc
 
     lonc = lona
-    colatc = colata + 2.0_dp*atan(1.0_dp/alpha)
+    colatc = colata + 2.0_dp*atan(1.0_dp/n)
     if (colatc>pi) then
       if (lonc>=pi) then
         lonc = lonc - pi
@@ -133,18 +133,18 @@ contains
 
   end function confmap_midpoint
 
-  subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate)
-    use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2, math_inf
+  subroutine confmap_grid2earth(lon, colat, a, b, c, lone, colate, alpha)
+    use math_module, only: pih=>math_pih, pi=>math_pi, pi2=>math_pi2, math_inf, math_arg
     implicit none
 
     real(kind=dp), dimension(:), intent(in) :: lon, colat
     complex(kind=dp), intent(in) :: a, b, c
 
     integer(kind=i4b) :: nx, ny, i, j
-    real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate
+    real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, alpha
 
     real(kind=dp) :: lonb, colatb
-    complex(kind=dp) :: w, z, ai, bi, ci, di
+    complex(kind=dp) :: w, z, ai, bi, ci, di, det
 
     nx = size(lon)
     ny = size(colat)
@@ -154,21 +154,25 @@ contains
       bi = -a*(c-b) !  b
       ci =    (c-a) !  c
       di =   -(c-b) ! -a
+      det = (c-a)*(c-b)*(a-b)
     else if (a==math_inf) then
       ai = b
       bi = c-b
       ci = 1.0_dp
       di = 0.0_dp
+      det = -(c-b)
     else if (b==math_inf) then
       ai = -(c-a)
       bi = -a
       ci =  0.0_dp
       di = -1.0_dp
+      det = c-a
     else if (c==math_inf) then
       ai =  b
       bi = -a
       ci =  1.0_dp
       di = -1.0_dp
+      det = -b+a
     else
       print *, "Invalid a, b, or c"
       stop
@@ -183,9 +187,8 @@ contains
           w = confmap_stereo(lon(i),colat(j))
           z = confmap_linear(w,ai,bi,ci,di)
           call confmap_invstereo(z,lone(i,j),colate(i,j)) 
-          if (lone(i,j)<0.0_dp) then
-            lone(i,j) = lone(i,j) + pi2
-          end if
+          lone(i,j) = modulo(lone(i,j),pi2)
+          alpha(i,j) = modulo(lon(i)+math_arg(det/((ci*w+di)**2))-lone(i,j),pi2)
         end do
       end if
     end do
