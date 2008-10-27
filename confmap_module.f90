@@ -143,7 +143,7 @@ contains
     integer(kind=i4b) :: nx, ny, i, j
     real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, alpha
 
-    real(kind=dp) :: lona, colata, lonb, colatb
+    real(kind=dp) :: lonb, colatb
     complex(kind=dp) :: w, z, ai, bi, ci, di, det
 
     nx = size(lon)
@@ -180,7 +180,6 @@ contains
     do j=1, ny
       if (colat(j)==pi) then
         call confmap_invstereo(b,lonb,colatb) 
-        call confmap_invstereo(a,lona,colata) 
         lone(:,j) = lonb
         colate(:,j) = colatb
         if ((colatb/=0.0_dp).and.(colatb/=pi)) then
