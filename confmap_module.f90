@@ -144,7 +144,7 @@ contains
     real(kind=dp), dimension(size(lon),size(colat)), intent(inout) :: lone, colate, alpha
 
     real(kind=dp) :: lona, colata, lonb, colatb
-    complex(kind=dp) :: w, z, ai, bi, ci, di, det, detr
+    complex(kind=dp) :: w, z, ai, bi, ci, di, det
 
     nx = size(lon)
     ny = size(colat)
@@ -154,28 +154,29 @@ contains
       bi = -a*(c-b) !  b
       ci =    (c-a) !  c
       di =   -(c-b) ! -a
+      det = (c-a)*(c-b)*(a-b)
     else if (a==math_inf) then
       ai = b
       bi = c-b
       ci = 1.0_dp
       di = 0.0_dp
+      det = -(c-b)
     else if (b==math_inf) then
       ai = -(c-a)
       bi = -a
       ci =  0.0_dp
       di = -1.0_dp
+      det = c-a
     else if (c==math_inf) then
       ai =  b
       bi = -a
       ci =  1.0_dp
       di = -1.0_dp
+      det = -b+a
     else
       print *, "Invalid a, b, or c"
       stop
     end if
-    det = ai*di-bi*ci
-    detr = -ai*bi+ci*di
-print *, "arg(det)=", math_arg(det/(di*di))*rad2deg, " arg(detr)=", math_arg(detr/(bi*bi))*rad2deg
     do j=1, ny
       if (colat(j)==pi) then
         call confmap_invstereo(b,lonb,colatb) 
@@ -183,11 +184,11 @@ print *, "arg(det)=", math_arg(det/(di*di))*rad2deg, " arg(detr)=", math_arg(det
         lone(:,j) = lonb
         colate(:,j) = colatb
         if ((colatb/=0.0_dp).and.(colatb/=pi)) then
-!          if ((modulo(abs(lona-lonb),pi)<1.0e-5_dp).and.(pi-colatb-colata<1.0e-5_dp)) then
-!            alpha(:,j) = modulo(lon(:)+math_arg(detr/(bi**2))-lonb,pi2)
-!          else
-            alpha(:,j) = modulo(pi-lon(:)-math_arg(detr/(bi**2))+lonb,pi2)
-!          end if
+          if (b==math_inf) then
+            alpha(:,j) = modulo(lon(:)+math_arg(det)-lonb,pi2)
+          else
+            alpha(:,j) = modulo(-lon(:)+math_arg(det/(ci*ci))-lonb,pi2)
+          end if
         else
           alpha(:,j) = 0.0_dp
         end if
