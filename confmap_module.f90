@@ -230,7 +230,7 @@ contains
     real(kind=dp), intent(in) :: lona, colata, lonb, colatb
     real(kind=dp) :: c
 
-    c = sphere_cosine(cos(colata),cos(colatb),sin(colata),sin(colatb),cos(lona-lonb))
+    c = sphere_cosine(cos(colata),cos(colatb),sin(colata),sin(colatb),lona-lonb)
     c = sqrt(0.5_dp*(1.0_dp+c))
     c = sqrt((1.0_dp+c)/(1.0_dp-c))
 

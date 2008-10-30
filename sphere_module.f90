@@ -160,7 +160,7 @@ contains
 		real(kind=dp), intent(in) :: lon1, lat1, lon2, lat2
 		real(kind=dp) :: l
 
-    l = acos(sphere_cosine(sin(lat1),sin(lat2),cos(lat1),cos(lat2),cos(lon1-lon2)))
+    l = acos(sphere_cosine(sin(lat1),sin(lat2),cos(lat1),cos(lat2),lon1-lon2))
 
 	end function sphere_orthodrome
 
