@@ -74,8 +74,9 @@ contains
 	end function sphere_xy2lon
 
 	function sphere_lon2i(lon,nx) result(i)
-	! returns the closest longitudinal point i, not exceeding lon
+	! finds i such that lon is lon(i) <= lon < lon(i+1)
   ! 1 <= return value <= nx
+    use closestindex_module, only: closestindex_regular
 		implicit none
 
 		real(kind=dp), intent(in) :: lon ! radians
@@ -85,38 +86,47 @@ contains
 		real(kind=dp) :: dlonr
 
 		dlonr = 0.5_dp*nx*pir
-		i = floor(lon*dlonr+1.0_dp) ! lon = 2pi/nx*(i-1)=dlon*(i-1)
+		i = closestindex_regular(lon, 0.0_dp, dlonr)
 
 	end function sphere_lon2i
 
-  function sphere_lat2j(lat,ny) result(j)
-	! returns the closest latitudinal point j, not exceeding lat
+  function sphere_lat2j(lat,ny,d) result(j)
+	! finds j such that lat is lat(j) <= lat < lat(j+1)
   ! 1 <= return value <= ny
+    use closestindex_module, only: closestindex_regular
     implicit none
 
     real(kind=dp), intent(in) :: lat ! radians
     integer(kind=i4b), intent(in) :: ny
-
+    real(kind=dp), intent(in) :: d ! =  1 SP to NP
+                                   ! = -1 NP to SP
     integer(kind=i4b) :: j
-    real(kind=dp) :: dlatr
+    real(kind=dp) :: dlatr, lat1
 
-    dlatr = (ny-1.0_dp)*pir
-    j = floor((lat+pih)*dlatr+1.0_dp) ! lat = -pi/2 + pi/(J-1)*(j-1)
+    dlatr = d*(ny-1.0_dp)*pir
+    lat1 = d*pih
+    j = closestindex_regular(lat, lat1, dlatr)
 
   end function sphere_lat2j
 
-	function sphere_lat2jg(lat,ny) result(j)
-	! returns the closest Gaussian point j using approximation
-	! lat varies from SP to NP
+	function sphere_lat2jg(lat, lat1, ny) result(j)
+	! finds j such that lat is lat(j) <= lat < lat(j+1)
   ! 0 <= return value <= ny
+  ! Ritchie 1987 (24) and (25)
+    use glatwgt_module, only: glatwgt_approx
+    use closestindex_module, only: closestindex_regular
 		implicit none
 
-		real(kind=dp), intent(in) :: lat ! radians
+		real(kind=dp), intent(in) :: lat, lat1 ! radians
 		integer(kind=i4b) :: ny
-
 		integer(kind=i4b) :: j
 
-    j = floor(0.5_dp*(ny+1.0_dp+(2.0_dp*ny+1.0_dp)*lat*pir)) ! lat = (-J-1+2j)pi/(2J+1)
+    real(kind=dp) :: dlatr, lat1a
+
+    call glatwgt_approx(lat1a, dlatr, ny)
+    dlatr = sign(1.0_dp/dlatr,-lat1)
+    lat1a = sign(lat1a, lat1)
+    j = closestindex_regular(lat, lat1a, dlatr)
 
 	end function sphere_lat2jg
 

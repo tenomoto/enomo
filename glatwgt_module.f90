@@ -23,7 +23,7 @@ module glatwgt_module
   real(kind=dp), private, dimension(:), allocatable :: an
 
   private :: legendre_init, legendre_P, legendre_dp, legendre_clean, newton
-  public :: glatwgt_calc
+  public :: glatwgt_calc, glatwgt_approx
 
 contains
 
@@ -88,6 +88,20 @@ contains
     call legendre_clean()
   
   end subroutine glatwgt_calc
+
+  subroutine glatwgt_approx(lat1, dlat, ny)
+! calculate values of first lat near SP and interval of
+! approximate Gaussian latitudes
+    use math_module, only: pi2=>math_pi2
+    implicit none
+
+    real(kind=dp), intent(out) :: lat1, dlat
+    integer(kind=i4b), intent(in) :: ny
+
+    dlat = pi2/(2.0_dp*ny+1)
+    lat1 = 0.5_dp*dlat*(1.0_dp-ny)
+
+  end subroutine glatwgt_approx
 
 ! private procedures
 
