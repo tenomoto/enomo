@@ -5,7 +5,7 @@ module sphere_module
 	private
 
 	public :: sphere_xy2lon, sphere_lonlat2xyz, sphere_uv2xyz, sphere_xyz2uv,     &
-            sphere_lon2i, sphere_lat2j, sphere_lat2jg, sphere_j2j, sphere_ij2i, &
+            sphere_j2j, sphere_ij2i, &
             sphere_orthodrome, sphere_cosine, sphere_trcosine, sphere_sine,     &
             sphere_lat2y, sphere_y2lat
 
@@ -72,63 +72,6 @@ contains
 		end if
 
 	end function sphere_xy2lon
-
-	function sphere_lon2i(lon,nx) result(i)
-	! finds i such that lon is lon(i) <= lon < lon(i+1)
-  ! 1 <= return value <= nx
-    use closestindex_module, only: closestindex_regular
-		implicit none
-
-		real(kind=dp), intent(in) :: lon ! radians
-		integer(kind=i4b), intent(in) :: nx
-
-		integer(kind=i4b) :: i
-		real(kind=dp) :: dlonr
-
-		dlonr = 0.5_dp*nx*pir
-		i = closestindex_regular(lon, 0.0_dp, dlonr)
-
-	end function sphere_lon2i
-
-  function sphere_lat2j(lat,ny,d) result(j)
-	! finds j such that lat is lat(j) <= lat < lat(j+1)
-  ! 1 <= return value <= ny
-    use closestindex_module, only: closestindex_regular
-    implicit none
-
-    real(kind=dp), intent(in) :: lat ! radians
-    integer(kind=i4b), intent(in) :: ny
-    real(kind=dp), intent(in) :: d ! =  1 SP to NP
-                                   ! = -1 NP to SP
-    integer(kind=i4b) :: j
-    real(kind=dp) :: dlatr, lat1
-
-    dlatr = d*(ny-1.0_dp)*pir
-    lat1 = d*pih
-    j = closestindex_regular(lat, lat1, dlatr)
-
-  end function sphere_lat2j
-
-	function sphere_lat2jg(lat, lat1, ny) result(j)
-	! finds j such that lat is lat(j) <= lat < lat(j+1)
-  ! 0 <= return value <= ny
-  ! Ritchie 1987 (24) and (25)
-    use glatwgt_module, only: glatwgt_approx
-    use closestindex_module, only: closestindex_regular
-		implicit none
-
-		real(kind=dp), intent(in) :: lat, lat1 ! radians
-		integer(kind=i4b) :: ny
-		integer(kind=i4b) :: j
-
-    real(kind=dp) :: dlatr, lat1a
-
-    call glatwgt_approx(lat1a, dlatr, ny)
-    dlatr = sign(1.0_dp/dlatr,-lat1)
-    lat1a = sign(lat1a, lat1)
-    j = closestindex_regular(lat, lat1a, dlatr)
-
-	end function sphere_lat2jg
 
   function sphere_j2j(j,ny) result(jout)
   ! returns 1<=jout<=ny from j that could be beyond poles (j<1, j>ny).
