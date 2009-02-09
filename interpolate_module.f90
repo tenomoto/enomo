@@ -26,7 +26,11 @@ contains
     real(kind=dp), intent(in) :: t, u
     real(kind=dp) :: fi
 
-    fi = (1.0_dp-u)*((1.0_dp-t)*f(1)+t*f(2)) + u*(t*f(3)+(1.0_dp-t)*f(4))
+    real(kind=dp) :: t1, u1
+
+    t1 = 1.0_dp-t
+    u1 = 1.0_dp-u
+    fi = u1*(t1*f(1)+t*f(2)) + u*(t*f(3)+t1*f(4))
 
   end function interpolate_bilinear
 
@@ -142,17 +146,17 @@ contains
 
 ! Cubic Hermie spline interpolation
 ! Source: Wikipedia (Cubic Hermite spline), www.cubic.org/docs/hermite.htm
+    tt  = t*t
+    ttt = t*tt
     do j=1, ny
-      tt  = t*t
-      ttt = t*tt
-!   coeff /2, -2,  1,  1,  & ! hermite
-!         -3,  3, -2, -1,  &
-!          0,  0,  1,  0,  &
-!          1,  0,  0,  0/
-      c1 =  2.d0*ttt-2.d0*tt+1.d0*t+1.d0
-      c2 = -3.d0*ttt+3.d0*tt-2.d0*t-1.d0
-      c3 =                        t
-      c4 =       ttt
+!   coeff | 2, -3,  0,  1|  & ! hermite
+!         |-2,  3,  0,  0|  &
+!         | 1, -2,  1,  0|  &
+!         | 1, -1,  0,  0|
+      c1 =  2.d0*ttt-3.d0*tt  +1.0
+      c2 = -2.d0*ttt+3.d0*tt
+      c3 =       ttt-2.d0*tt+t
+      c4 =       ttt-     tt
       ytmp(j) = c1*f(1,j)+c2*f(2,j)+(c3*fx(1,j)+c4*fx(2,j))*dlon
     end do
  
