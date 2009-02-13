@@ -36,8 +36,8 @@ contains
     implicit none
 
     real(kind=dp), dimension(:), intent(in) :: lon, lat
-    integer(kind=i4b), optional :: nn, mm
-    real(kind=dp), optional :: itermax, delta, latpol
+    integer(kind=i4b), optional :: nn, mm, itermax
+    real(kind=dp), optional :: delta, latpol
 
     real(kind=dp) :: dlatr
     integer(kind=i4b) :: j
