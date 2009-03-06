@@ -128,13 +128,14 @@ contains
 
   end function regrid_bilinear
 
-  function regrid_linpol(b,lon,lat) result(ai)
+  function regrid_linpol(b,lon,lat,wolin) result(ai)
     use glatwgt_module, only: glatwgt_within
     use interpolate_module, only: interpolate_linpol
     implicit none
 
     real(kind=dp), dimension(:,:), intent(in) :: b
     real(kind=dp), intent(in) :: lon, lat
+    logical, intent(in), optional :: wolin
     real(kind=dp) :: ai
 
     integer(kind=i4b) :: i, j, ii, jj
@@ -147,18 +148,23 @@ contains
     lon4(:) = regrid_lon(i-1:i+2)
     lat4(:) = regrid_lat(j-1:j+2)
     f(:,:) = b(i-1:i+2,j-1:j+2)
-    t = (lon-regrid_lon(i))*dlonr
+    if (present(wolin).and.wolin) then
+      t = -1
+    else
+      t = (lon-regrid_lon(i))*dlonr
+    end if
     ai = interpolate_linpol(f,lon4,lat4,lon,lat,t)
 
   end function regrid_linpol
 
-  function regrid_spcher(b,bx,lon,lat) result(ai)
+  function regrid_spcher(b,bx,lon,lat,usecubic) result(ai)
     use glatwgt_module, only: glatwgt_within
     use interpolate_module, only: interpolate_spcher
     implicit none
 
     real(kind=dp), dimension(:,:), intent(in) :: b,bx
     real(kind=dp), intent(in) :: lon, lat
+    logical, intent(in), optional :: usecubic
     real(kind=dp) :: ai
 
     integer(kind=i4b) :: i, j, ii, jj
@@ -167,12 +173,16 @@ contains
     real(kind=dp), dimension(2,6) :: f, fx
 
     i = floor(lon*dlonr+1) + n
+    t = (lon-regrid_lon(i))*dlonr
     j = glatwgt_within(regrid_lat(1+m:ny+m),lat) + m
     lat6(:) = regrid_lat(j-2:j+3)
     f(:,:)  =  b(i:i+1,j-2:j+3)
     fx(:,:) = bx(i:i+1,j-2:j+3)
-    t = (lon-regrid_lon(i))*dlonr
-    ai = interpolate_spcher(f,fx,lat6,dlon,lat,t)
+    if (present(usecubic).and.usecubic) then
+      ai = interpolate_spcher(f(:,2:5),fx(:,2:5),lat6(2:5),dlon,lat,t)
+    else
+      ai = interpolate_spcher(f,fx,lat6,dlon,lat,t)
+    end if
 
   end function regrid_spcher
 

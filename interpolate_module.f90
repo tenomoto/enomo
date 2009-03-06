@@ -121,12 +121,18 @@ contains
     real(kind=dp), intent(in) :: x,y,t
     real(kind=dp) :: fi
 
+! full cubic lagrange interpolation if t<0
     real(kind=dp), dimension(ny) :: ytmp
     integer(kind=i4b) :: j
-    ytmp(1) = (1.0_dp-t)*f(2,1)+t*f(3,1)
+    if (t>=0) then
+      ytmp(1) = (1.0_dp-t)*f(2,1)+t*f(3,1)
+      ytmp(4) = (1.0_dp-t)*f(2,4)+t*f(3,4)
+    else
+      ytmp(1) = cubiclagrange(lon,f(1:nx,1),x)
+      ytmp(4) = cubiclagrange(lon,f(1:nx,4),x)
+    end if
     ytmp(2) = cubiclagrange(lon,f(1:nx,2),x)
     ytmp(3) = cubiclagrange(lon,f(1:nx,3),x)
-    ytmp(4) = (1.0_dp-t)*f(2,4)+t*f(3,4)
     fi = cubiclagrange(lat,ytmp,y)
 
   end function interpolate_linpol
@@ -134,20 +140,21 @@ contains
   function interpolate_spcher(f,fx,lat,dlon,y,t) result(fi)
     implicit none
 
-    integer(kind=i4b), parameter :: nx = 2, ny = 6 ! quintic
-    real(kind=dp), dimension(nx,ny), intent(in) :: f, fx
-    real(kind=dp), dimension(ny), intent(in) :: lat
+    integer(kind=i4b), parameter :: nx = 2
+    real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(nx,size(lat)), intent(in) :: f, fx
     real(kind=dp), intent(in) :: dlon, y, t
     real(kind=dp) :: fi
 
-    real(kind=dp), dimension(ny) :: ytmp
+    real(kind=dp), dimension(size(lat)) :: ytmp
     real(kind=dp) :: tt, ttt, c1, c2, c3, c4
-    integer(kind=i4b) :: j
+    integer(kind=i4b) :: j, ny
 
 ! Cubic Hermie spline interpolation
 ! Source: Wikipedia (Cubic Hermite spline), www.cubic.org/docs/hermite.htm
     tt  = t*t
     ttt = t*tt
+    ny = size(lat)
     do j=1, ny
 !   coeff | 2, -3,  0,  1|  & ! hermite
 !         |-2,  3,  0,  0|  &
@@ -160,7 +167,14 @@ contains
       ytmp(j) = c1*f(1,j)+c2*f(2,j)+(c3*fx(1,j)+c4*fx(2,j))*dlon
     end do
  
-    fi = quinticlagrange(lat,ytmp,y)
+    if (ny==6) then
+      fi = quinticlagrange(lat,ytmp,y)
+    else if (ny==4) then
+      fi = cubiclagrange(lat,ytmp,y)
+    else
+      print *, "*** error in interpolate_spcher ny=", ny
+      stop
+    end if
 
   end function interpolate_spcher
 
