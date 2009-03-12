@@ -7,6 +7,7 @@ module air_module
     air_cp = 1004.0_dp, & ! specific heat at constant pressure, J/deg/kg
     air_cv =  717.0_dp, & ! specific heat at constant volume, J/deg/kig
     air_kappa = air_rd/air_cp, &
-    air_gamma = air_cp/air_cv
+    air_gamma = air_cp/air_cv, &
+    air_pr = 1000.e2_dp  ! reference pressure
 
 end module air_module

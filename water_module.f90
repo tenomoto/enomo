@@ -4,6 +4,7 @@ module water_module
   implicit none
 
   real(kind=dp), parameter, public ::  &
+    water_t0  = 273.15_dp, & ! freezing temperature
     water_rv  = 461.0_dp, & ! gas constant for water vapour, J/deg/kg
     water_lv0 = 2.5e6_dp, & ! latent heat of vapouriztion at 0C , J/kg
     water_eps = air_rd/water_rv
