@@ -1,5 +1,5 @@
 module earth_module
-  use type_module, only: i4b, dp
+  use kind_module, only: i4b, dp
   use math_module, only: pi=>math_pi
   implicit none
 

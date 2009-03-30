@@ -1,11 +1,12 @@
 module math_module
-  use type_module, only: dp, dpc
+  use kind_module, only: dp, dpc
   implicit none
 
   real(kind=dp), parameter, public :: &
     math_pi  = 3.141592653589793, math_pi2 = 2.0_dp*math_pi, &
     math_pih = 0.5_dp*math_pi, math_pir = 1.0_dp/math_pi, &
     math_deg2rad = math_pi/180.0_dp, math_rad2deg = 180.0_dp*math_pir, &
+    math_nm2m = 1852.0_dp, math_knot2ms = math_nm2m/3600.0_dp, &
     math_undef = -9.99e33_dp, math_inf = 9.99e33_dp
   complex(kind=dpc), parameter, public :: &
     math_i = (0.0_dp,1.0_dp)

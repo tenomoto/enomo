@@ -1,6 +1,6 @@
 module confmap_module
 ! generates grid and map factors using conformal mapping
-  use type_module, only: i4b, dp, dpc
+  use kind_module, only: i4b, dp, dpc
   implicit none
   private
 

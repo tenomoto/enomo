@@ -1,6 +1,6 @@
 module slp_module
 
-  use type_module, only : dp, i4b
+  use kind_module, only : dp, i4b
   implicit none
   private
 

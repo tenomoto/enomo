@@ -12,7 +12,7 @@ module upstream_module
 !   2009-01-27 Modified for enomo
 !   2004-02-26 First version
 
-  use type_module, only: i4b, dp
+  use kind_module, only: i4b, dp
   use math_module, only: pi2=>math_pi2
   use earth_module, only: a=>earth_radius
   private

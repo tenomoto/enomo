@@ -10,7 +10,7 @@ module interpolate_module
 ! 2004-09-10 some simplification
 ! 2004-03    first version
 
-  use type_module, only: i4b, dp
+  use kind_module, only: i4b, dp
   implicit none
   private
 

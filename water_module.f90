@@ -1,5 +1,5 @@
 module water_module
-  use type_module, only: dp
+  use kind_module, only: dp
   use air_module, only: air_rd
   implicit none
 

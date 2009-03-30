@@ -1,5 +1,5 @@
 module vectrans_module
-  use type_module, only: dp, i4b
+  use kind_module, only: dp, i4b
   private
 
   real(kind=dp), dimension(:), allocatable, private :: wvts, wvhags, work, workt

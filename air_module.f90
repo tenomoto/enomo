@@ -1,5 +1,5 @@
 module air_module
-  use type_module, only : dp
+  use kind_module, only : dp
   implicit none
 
   real(kind=dp), parameter, public :: &

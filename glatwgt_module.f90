@@ -7,14 +7,14 @@ module glatwgt_module
 ! Usage:
 !   Calculate Gaussian points and weights
 !     subroutine f_scgaus(x, w, jMax)
-!       x(jMax)  cos(Gaussian colatitudes) = sin(Gaussian latitudes)
+!       x(jMax)  Gaussian latitudes
 !       w(jMax)  Gaussian weights
 ! History:
 !   TE 27 Apr 2003  Fixed a bug in setting SH colatitudes
 !   TE 28 Apr 2003  Ported for AFES
 !   TE 24 Apr 2003  Implemented Fourier-Legendre formulation.
 
-  use type_module, only : dp, i4b
+  use kind_module, only : dp, i4b
   private
 
 !  xacc_min  double minimum accuracy available
@@ -33,8 +33,7 @@ contains
     use math_module, only: pi=>math_pi, pih=>math_pih
     implicit none
   
-! returns sin(Gaussian latitudes) between 1 and -1
-! and Gaussian weights.
+! returns Gaussian latitudes and Gaussian weights.
 ! NB. Gaussian colatitudes are used during calculation
 
     real(kind=dp), dimension(:), intent(out) :: x, w
@@ -106,16 +105,16 @@ contains
   end subroutine glatwgt_approx
 
   function glatwgt_within(glat, lat) result(j)
-	! finds j such that lat is inbetween lat(j) and lat(j+1)
+  ! finds j such that lat is inbetween lat(j) and lat(j+1)
   ! 0 <= return value <= ny
-		implicit none
+    implicit none
 
     real(kind=dp), dimension(:), intent(in) :: glat
-		real(kind=dp), intent(in) :: lat ! radians
+    real(kind=dp), intent(in) :: lat ! radians
 
-		integer(kind=i4b) :: j
+    integer(kind=i4b) :: j
 
-		integer(kind=i4b) :: ny
+    integer(kind=i4b) :: ny
     real(kind=dp) :: dlatr, lat1, s
 
     ny = size(glat)
@@ -139,13 +138,13 @@ contains
 
   function glatwgt_closest(glat, lat) result(j)
 ! finds index closest to lat
-		implicit none
+    implicit none
 
     real(kind=dp), dimension(:), intent(in) :: glat
-		real(kind=dp), intent(in) :: lat ! radians
-		integer(kind=i4b) :: j
+    real(kind=dp), intent(in) :: lat ! radians
+    integer(kind=i4b) :: j
 
-		integer(kind=i4b) :: ny
+    integer(kind=i4b) :: ny
     real(kind=dp) :: dlatr, lat1
 
     ny = size(glat)
@@ -223,12 +222,12 @@ subroutine newton(f, df, x0, x, tolerance)
 
   interface
     subroutine f(x, f_result)
-      use type_module, only: dp, i4b
+      use kind_module, only: dp, i4b
       real(kind=dp), intent(in) :: x
       real(kind=dp), intent(out) :: f_result
     end subroutine f
     subroutine df(x, f_result)
-      use type_module, only: dp, i4b
+      use kind_module, only: dp, i4b
       real(kind=dp), intent(in) :: x
       real(kind=dp), intent(out) :: f_result
     end subroutine df

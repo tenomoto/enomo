@@ -1,6 +1,6 @@
 module fft_module
 
-	use type_module, only: i4b, i8b, dp
+	use kind_module, only: i4b, i8b, dp
 	include "fftw3.f"
 !	implicit none
 	private

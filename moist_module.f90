@@ -1,6 +1,6 @@
 module moist_module
 ! collection of functions to calculate moist variables
-  use type_module, only: i4b, dp
+  use kind_module, only: i4b, dp
   use math_module, only: undef=>math_undef
   use air_module, only: Rd=>air_rd, pr=>air_pr
   use water_module, only: T0=>water_t0, eps=>water_eps

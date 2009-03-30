@@ -2,7 +2,7 @@ module regrid_module
 
 ! interpolate values in a given lon-lat grid
 
-  use type_module, only: i4b, dp
+  use kind_module, only: i4b, dp
   implicit none
   private
 

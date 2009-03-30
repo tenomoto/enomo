@@ -1,6 +1,7 @@
 module calendar_module
 ! provides date utility fuctions
-  use type_module, only: i4b
+  use kind_module, only : i4b
+  use string_module, only : string_tolower
   implicit none
 
   character(len=*), dimension(12), parameter, public :: calendar_monthnames = &

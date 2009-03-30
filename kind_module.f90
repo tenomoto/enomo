@@ -1,4 +1,4 @@
-module type_module
+module kind_module
 
 	implicit none
 
@@ -18,5 +18,5 @@ module type_module
 	integer, parameter, public :: spc = kind((1.0,1.0))
 	integer, parameter, public :: dpc = kind((1.0d0,1.0d0))
 
-end module type_module
+end module kind_module
 
