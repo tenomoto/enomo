@@ -31,7 +31,7 @@ module upstream_module
 contains
 
   subroutine upstream_init(lon, lat, nn, mm, itermax, delta, latpol)
-    use glatwgt_module, only: glatwgt_within
+    use glatwgt_module, only: glatwgt_approx
     use regrid_module, only: regrid_init
     implicit none
 
@@ -39,7 +39,7 @@ contains
     integer(kind=i4b), optional :: nn, mm, itermax
     real(kind=dp), optional :: delta, latpol
 
-    real(kind=dp) :: dlatr
+    real(kind=dp) :: lat1, dlat, dlatr
     integer(kind=i4b) :: j
 
     nx = size(lon)
@@ -64,11 +64,12 @@ contains
     latc = sign(latc,lat(1))
     if ((lat(2)-lat(1))==(lat(3)-lat(2))) then ! equispaced
       dlatr = 1.0_dp/(lat(2)-lat(1))
-      jc = floor((latc-lat(1))*dlatr+1)
+      lat1 = lat(1)
     else ! assume Gaussian latitudes
-      jc = glatwgt_within(lat,latc)
+      call glatwgt_approx(lat1,dlat,ny)
+      dlatr = -sign(1.0_dp,lat(1))/dlat
     end if
-    jc = max(1,jc)
+    jc = max(1,floor((latc-lat1)*dlatr+1))
     if (jc<ny/2) then ! use find_lonlat
       print *, "jc =", jc, " approximation between", lat(jc+1), " and", lat(ny-jc)
       allocate(seclat(ny), seclat2(ny), tanlat(ny))
@@ -109,8 +110,8 @@ contains
 
     lmid = present(midlon).and.present(midlat).and. &
            present(umid)  .and.present(vmid)
-    call regrid_extend(u, ubuf, .true.)
-    call regrid_extend(v, vbuf, .true.)
+    call regrid_extend(u, ubuf, .false.)
+    call regrid_extend(v, vbuf, .false.)
     ubuf = ubuf/a
     vbuf = vbuf/a
     ! use RB94 approximation far from the poles
@@ -189,6 +190,8 @@ contains
       if (k>1) then
         un = regrid_linpol(ubuf, mlon, mlat)
         vn = regrid_linpol(vbuf, mlon, mlat)
+!        un = regrid_bilinear(ubuf, mlon, mlat)
+!        vn = regrid_bilinear(vbuf, mlon, mlat)
       end if
       ! normalised Cartesian velocity
       call uv2xyz(un,vn,mlon,mlat,xd,yd,zd)

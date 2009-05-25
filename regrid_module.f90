@@ -3,11 +3,13 @@ module regrid_module
 ! interpolate values in a given lon-lat grid
 
   use kind_module, only: i4b, dp
+  use bisection_module, only: bisection_locate
+use math_module, only: rad2deg=>math_rad2deg
   implicit none
   private
 
   integer(kind=i4b), private :: nx, nxh, ny, n, m
-  real(kind=dp), private :: dlon, dlonr
+  real(kind=dp), private :: dlon, dlonr, lat1, dlatr, s
   real(kind=dp), dimension(:), allocatable, public :: regrid_lon, regrid_lat
 
   public :: regrid_init, regrid_clean, regrid_extend, &
@@ -17,12 +19,14 @@ contains
 
   subroutine regrid_init(lon,lat,nn,mm)
     use math_module, only: pi=>math_pi, pi2=>math_pi2
+    use glatwgt_module, only: glatwgt_approx
     implicit none
 
     real(kind=dp), dimension(:), intent(in) :: lon, lat
     integer(kind=i4b), intent(in) :: nn, mm
 
     integer(kind=i4b) :: i, j
+    real(kind=dp) :: dlat
 
     nx  = size(lon)
     ny  = size(lat)
@@ -40,6 +44,10 @@ contains
       regrid_lon(i) = -(n-i+1)*dlon
       regrid_lon(nx+n+i) = pi2+(i-1)*dlon
     end do
+    call glatwgt_approx(lat1, dlat, ny)
+    s = sign(1.0_dp,lat(1))
+    dlatr = -sign(1.0_dp/dlat, lat(1))
+    lat1 = sign(lat1, lat(1))
     do j=1, ny
       regrid_lat(j+m) = lat(j)
     end do
@@ -104,7 +112,6 @@ contains
   end subroutine regrid_extend
 
   function regrid_bilinear(b,lon,lat) result(ai)
-    use glatwgt_module, only: glatwgt_within
     use interpolate_module, only: interpolate_bilinear
     implicit none
 
@@ -117,7 +124,7 @@ contains
     real(kind=dp), dimension(4) :: f
 
     i = floor(lon*dlonr+1) + n
-    j = glatwgt_within(regrid_lat(1+m:ny+m),lat) + m
+    j = bisection_locate(regrid_lat,lat)
     f(1) = b(i,  j  )
     f(2) = b(i+1,j  )
     f(3) = b(i+1,j+1)
@@ -129,7 +136,6 @@ contains
   end function regrid_bilinear
 
   function regrid_linpol(b,lon,lat,wolin) result(ai)
-    use glatwgt_module, only: glatwgt_within
     use interpolate_module, only: interpolate_linpol
     implicit none
 
@@ -144,7 +150,7 @@ contains
     real(kind=dp), dimension(4,4) :: f
 
     i = floor(lon*dlonr+1) + n
-    j = glatwgt_within(regrid_lat(1+m:ny+m),lat) + m
+    j = bisection_locate(regrid_lat,lat)
     lon4(:) = regrid_lon(i-1:i+2)
     lat4(:) = regrid_lat(j-1:j+2)
     f(:,:) = b(i-1:i+2,j-1:j+2)
@@ -158,7 +164,6 @@ contains
   end function regrid_linpol
 
   function regrid_spcher(b,bx,lon,lat,usecubic) result(ai)
-    use glatwgt_module, only: glatwgt_within
     use interpolate_module, only: interpolate_spcher
     implicit none
 
@@ -174,7 +179,7 @@ contains
 
     i = floor(lon*dlonr+1) + n
     t = (lon-regrid_lon(i))*dlonr
-    j = glatwgt_within(regrid_lat(1+m:ny+m),lat) + m
+    j = bisection_locate(regrid_lat,lat)
     lat6(:) = regrid_lat(j-2:j+3)
     f(:,:)  =  b(i:i+1,j-2:j+3)
     fx(:,:) = bx(i:i+1,j-2:j+3)
@@ -187,7 +192,6 @@ contains
   end function regrid_spcher
 
   function regrid_bicubic(b,bx,by,bxy,lon,lat) result(ai)
-    use glatwgt_module, only: glatwgt_within
     use interpolate_module, only: interpolate_bicubic
     implicit none
  
@@ -200,7 +204,7 @@ contains
     real(kind=dp), dimension(4) :: f, fx, fy, fxy
 
     i = floor(lon*dlonr+1) + n
-    j = glatwgt_within(regrid_lat(1+m:ny+m),lat) + m
+    j = bisection_locate(regrid_lat,lat)
     dlat = regrid_lat(j+1)-regrid_lat(j)
     f(1)   =   b(i,  j  )
     f(2)   =   b(i+1,j  )
@@ -223,6 +227,43 @@ contains
     ai = interpolate_bicubic(f,fx,fy,fxy,dlon,dlat,t,u)
 
   end function regrid_bicubic
+
+! private routines
+
+!  function findj(lat) result(j)
+!    implicit none
+!
+!    real(kind=dp), intent(in) :: lat
+!
+!    integer(kind=i4b) :: j, j0
+!
+!    j = floor((lat-lat1)*dlatr+1) + m ! first guess
+!    j0 = j
+!    decr: do
+!      if (s*(lat-regrid_lat(j))<=0.0_dp) then
+!        exit decr
+!      end if
+!      if (j>2) then
+!        j = j - 1
+!      else
+!        print *, "error in regrid findj: too small"
+!        print *, j0, regrid_lat(j0), lat, regrid_lat(j0+1)
+!        stop
+!      end if
+!    end do decr
+!    incr: do
+!      if (s*(lat-regrid_lat(j+1))>0.0_dp) then
+!        exit incr
+!      end if
+!      if (j<ny+2*m-1) then
+!        j = j + 1
+!      else
+!        print *, "error in regrid findj: too large"
+!        stop
+!      end if
+!    end do incr
+!
+!  end function findj
 
 end module regrid_module
   

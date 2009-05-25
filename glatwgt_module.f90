@@ -23,7 +23,7 @@ module glatwgt_module
   real(kind=dp), private, dimension(:), allocatable :: an
 
   private :: legendre_init, legendre_P, legendre_dp, legendre_clean, newton
-  public :: glatwgt_calc, glatwgt_approx, glatwgt_within, glatwgt_closest
+  public :: glatwgt_calc, glatwgt_approx
 
 contains
 
@@ -103,57 +103,6 @@ contains
     lat1 = 0.5_dp*dlat*(1.0_dp-ny)
 
   end subroutine glatwgt_approx
-
-  function glatwgt_within(glat, lat) result(j)
-  ! finds j such that lat is inbetween lat(j) and lat(j+1)
-  ! 0 <= return value <= ny
-    implicit none
-
-    real(kind=dp), dimension(:), intent(in) :: glat
-    real(kind=dp), intent(in) :: lat ! radians
-
-    integer(kind=i4b) :: j
-
-    integer(kind=i4b) :: ny
-    real(kind=dp) :: dlatr, lat1, s
-
-    ny = size(glat)
-    call glatwgt_approx(lat1, dlatr, ny)
-    dlatr = sign(1.0_dp/dlatr,-glat(1))
-    lat1 = sign(lat1, glat(1))
-    j = floor((lat-lat1)*dlatr+1)
-    ! correction is required since sphere_lat2jg
-    ! uses approximate values of Gaussian latitudes
-    if ((j>0).and.(j<ny)) then
-      s = sign(1.0_dp,glat(1))
-      if (s*(lat-glat(j))>0.0_dp) then
-        j = j - 1
-      end if
-      if (s*(lat-glat(j+1))<=0.0_dp) then
-        j = j + 1
-      end if
-    end if
-
-  end function glatwgt_within
-
-  function glatwgt_closest(glat, lat) result(j)
-! finds index closest to lat
-    implicit none
-
-    real(kind=dp), dimension(:), intent(in) :: glat
-    real(kind=dp), intent(in) :: lat ! radians
-    integer(kind=i4b) :: j
-
-    integer(kind=i4b) :: ny
-    real(kind=dp) :: dlatr, lat1
-
-    ny = size(glat)
-    call glatwgt_approx(lat1, dlatr, ny)
-    dlatr = sign(1.0_dp/dlatr,-glat(1))
-    lat1 = sign(lat1, glat(1))
-    j = nint((lat-lat1)*dlatr+1)
-
-  end function glatwgt_closest
 
 ! private procedures
 
