@@ -1,77 +1,77 @@
 module sphere_module
 ! utility for a spherical topology
-	use kind_module, only: i4b, dp
-	use math_module, only: pi=>math_pi, pi2=>math_pi2, pih=>math_pih, pir=>math_pir
-	private
+  use kind_module, only: i4b, dp
+  use math_module, only: pi=>math_pi, pi2=>math_pi2, pih=>math_pih, pir=>math_pir
+  private
 
-	public :: sphere_xy2lon, sphere_lonlat2xyz, sphere_uv2xyz, sphere_xyz2uv,     &
+  public :: sphere_xy2lon, sphere_lonlat2xyz, sphere_uv2xyz, sphere_xyz2uv,     &
             sphere_j2j, sphere_ij2i, &
             sphere_orthodrome, sphere_cosine, sphere_trcosine, sphere_sine,     &
             sphere_lat2y, sphere_y2lat
 
 contains
 
-	subroutine sphere_lonlat2xyz(lon, lat, x, y, z)
-		implicit none
+  subroutine sphere_lonlat2xyz(lon, lat, x, y, z)
+    implicit none
 
-		real(kind=dp), intent(in) :: lon, lat
-		real(kind=dp), intent(out) :: x, y, z
+    real(kind=dp), intent(in) :: lon, lat
+    real(kind=dp), intent(out) :: x, y, z
 
     x = cos(lon)*cos(lat)
-		y = sin(lon)*cos(lat)
-		z = sin(lat)
+    y = sin(lon)*cos(lat)
+    z = sin(lat)
 
-	end subroutine sphere_lonlat2xyz
+  end subroutine sphere_lonlat2xyz
 
-	subroutine sphere_uv2xyz(u, v, lon, lat, xd, yd, zd)
-		implicit none
+  subroutine sphere_uv2xyz(u, v, lon, lat, xd, yd, zd)
+    implicit none
 
-		real(kind=dp), intent(in) :: u, v, lon, lat
-		real(kind=dp), intent(out) :: xd, yd, zd
+    real(kind=dp), intent(in) :: u, v, lon, lat
+    real(kind=dp), intent(out) :: xd, yd, zd
 
-		xd = -u*sin(lon) - v*cos(lon)*sin(lat)
-		yd =  u*cos(lon) - v*sin(lon)*sin(lat)
-		zd =  v*cos(lat)
+    xd = -u*sin(lon) - v*cos(lon)*sin(lat)
+    yd =  u*cos(lon) - v*sin(lon)*sin(lat)
+    zd =  v*cos(lat)
 
-	end subroutine sphere_uv2xyz
+  end subroutine sphere_uv2xyz
 
-	subroutine sphere_xyz2uv(xd, yd, zd, lon, lat, u, v)
-		implicit none
+  subroutine sphere_xyz2uv(xd, yd, zd, lon, lat, u, v)
+    implicit none
 
-		real(kind=dp), intent(in) :: xd, yd, zd, lon, lat
-		real(kind=dp), intent(out) :: u, v
+    real(kind=dp), intent(in) :: xd, yd, zd, lon, lat
+    real(kind=dp), intent(out) :: u, v
 
-		u = cos(lon)*yd - sin(lon)*xd
-		if (abs(lat) == pih) then
-			v = -cos(lon)*xd-sin(lon)*yd ! omitted division by sin(pi/2) = 1
-		else
-			v = zd/cos(lat)
-		end if
+    u = cos(lon)*yd - sin(lon)*xd
+    if (abs(lat) == pih) then
+      v = -cos(lon)*xd-sin(lon)*yd ! omitted division by sin(pi/2) = 1
+    else
+      v = zd/cos(lat)
+    end if
 
-	end subroutine sphere_xyz2uv
+  end subroutine sphere_xyz2uv
 
-	function sphere_xy2lon(x,y) result(lon)
-		implicit none
+  function sphere_xy2lon(x,y) result(lon)
+    implicit none
 
-		real(kind=dp), intent(in) :: x, y
-		real(kind=dp) :: lon
+    real(kind=dp), intent(in) :: x, y
+    real(kind=dp) :: lon
 
-		if (x==0.0_dp) then
-			if (y>=0.0_dp) then
-				lon = pih
-			else
-				lon = pi+pih
-			end if
-		else
-			lon = atan(y/x)
-			if (x<0.0_dp) then
-				lon = lon + pi
-			else if (y<0.0_dp) then ! x1 > 0.0
-				lon = lon + pi2
-			end if
-		end if
+    if (x==0.0_dp) then
+      if (y>=0.0_dp) then
+        lon = pih
+      else
+        lon = pi+pih
+      end if
+    else
+      lon = atan(y/x)
+      if (x<0.0_dp) then
+        lon = lon + pi
+      else if (y<0.0_dp) then ! x1 > 0.0
+        lon = lon + pi2
+      end if
+    end if
 
-	end function sphere_xy2lon
+  end function sphere_xy2lon
 
   function sphere_j2j(j,ny) result(jout)
   ! returns 1<=jout<=ny from j that could be beyond poles (j<1, j>ny).
@@ -106,16 +106,16 @@ contains
       
   end function sphere_ij2i
 
-	function sphere_orthodrome(lon1, lat1, lon2, lat2) result(l)
-	! returns the shortest distance between two points on the unit sphere
-		implicit none
+  function sphere_orthodrome(lon1, lat1, lon2, lat2) result(l)
+  ! returns the shortest distance between two points on the unit sphere
+    implicit none
 
-		real(kind=dp), intent(in) :: lon1, lat1, lon2, lat2
-		real(kind=dp) :: l
+    real(kind=dp), intent(in) :: lon1, lat1, lon2, lat2
+    real(kind=dp) :: l
 
     l = acos(sphere_cosine(sin(lat1),sin(lat2),cos(lat1),cos(lat2),lon1-lon2))
 
-	end function sphere_orthodrome
+  end function sphere_orthodrome
 
 ! spherical triagle composed of points pa, pb, pc and arcs a, b, c
   function sphere_cosine(cosb, cosc, sinb, sinc, pa) result(cosa)

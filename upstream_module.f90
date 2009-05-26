@@ -13,7 +13,7 @@ module upstream_module
 !   2004-02-26 First version
 
   use kind_module, only: i4b, dp
-  use math_module, only: pi2=>math_pi2
+  use math_module, only: pi=>math_pi, pi2=>math_pi2, pih=>math_pih
   use earth_module, only: a=>earth_radius
   private
 
@@ -110,8 +110,8 @@ contains
 
     lmid = present(midlon).and.present(midlat).and. &
            present(umid)  .and.present(vmid)
-    call regrid_extend(u, ubuf, .false.)
-    call regrid_extend(v, vbuf, .false.)
+    call regrid_extend(u, ubuf, .true.)
+    call regrid_extend(v, vbuf, .true.)
     ubuf = ubuf/a
     vbuf = vbuf/a
     ! use RB94 approximation far from the poles
@@ -188,10 +188,10 @@ contains
     call lonlat2xyz(alon, alat, xg, yg, zg) 
     do k=1, kmax
       if (k>1) then
-        un = regrid_linpol(ubuf, mlon, mlat)
-        vn = regrid_linpol(vbuf, mlon, mlat)
-!        un = regrid_bilinear(ubuf, mlon, mlat)
-!        vn = regrid_bilinear(vbuf, mlon, mlat)
+!        un = regrid_linpol(ubuf, mlon, mlat)
+!        vn = regrid_linpol(vbuf, mlon, mlat)
+        un = regrid_bilinear(ubuf, mlon, mlat)
+        vn = regrid_bilinear(vbuf, mlon, mlat)
       end if
       ! normalised Cartesian velocity
       call uv2xyz(un,vn,mlon,mlat,xd,yd,zd)
@@ -211,6 +211,10 @@ contains
     z1 = b*z1 - zg
     dlon = xy2lon(x1,y1)
     dlat = asin(z1)
+    if (abs(dlat)>pih) then
+      dlon = modulo(dlon+pi, pi2)
+      dlat = sign(pi, dlat) - dlat
+    end if
     
   end subroutine find_xyz
 
@@ -250,13 +254,12 @@ contains
       end if
       mlat = alat - vndt+0.5_dp*tanlat(j)*undt2
     end do
-    dlon = alon - 2.0_dp*seclat(j)*undt*(1.0_dp-tanlat(j)*vndt)
-    if (dlon<0.0_dp) then
-      dlon = dlon + pi2
-    else if (dlon>=pi2) then
-      dlon = dlon - pi2
-    end if
+    dlon = modulo(alon - 2.0_dp*seclat(j)*undt*(1.0_dp-tanlat(j)*vndt), pi2)
     dlat = alat - 2.0_dp*vndt+(seclat2(j)-f23)*undt2*vndt
+    if (abs(dlat)>pih) then
+      dlon = modulo(dlon+pi, pi2)
+      dlat = sign(pi, dlat) - dlat
+    end if
 
   end subroutine find_lonlat
 
