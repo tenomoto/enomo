@@ -38,7 +38,7 @@ contains
   end function confmap_stereo
 
   subroutine confmap_invstereo(z,lon,colat)
-	  use math_module, only: math_arg, math_inf, math_pi
+    use math_module, only: math_arg, math_inf, math_pi
     implicit none
 
     complex(kind=dpc), intent(in) :: z

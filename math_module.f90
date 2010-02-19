@@ -42,19 +42,19 @@ contains
         theta = theta + math_pi2
       end if
     else if (x==0.0_dp) then
-			if (y>0.0_dp) then
-				theta = math_pih
-			else if (y<0.0_dp) then
-				theta = math_pi+math_pih
+      if (y>0.0_dp) then
+        theta = math_pih
+      else if (y<0.0_dp) then
+        theta = math_pi+math_pih
       else
         theta = 0.0_dp
-			end if
+      end if
     else if (y==0.0_dp) then
-			if (x>=0.0_dp) then
-				theta = 0.0_dp
-			else
-				theta = math_pi
-			end if 
+      if (x>=0.0_dp) then
+        theta = 0.0_dp
+      else
+        theta = math_pi
+      end if 
     end if
 
   end function math_atan2
