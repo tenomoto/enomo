@@ -5,6 +5,8 @@ module svd_module
   integer(kind=i4b), private :: m, n, lda, ldu, ldvt, lwork
   real(kind=dp), dimension(:), allocatable, private :: work
 
+  logical, public :: svd_verbose = .false.
+
   public :: svd_init, svd_calc, svd_clean
 
 contains
@@ -20,8 +22,10 @@ contains
     ldu = lda
     ldvt = min(m,n)
     lwork = max(3*ldvt+max(m,n),5*ldvt)
-    print *, "m=", m, " n=", n
-    print *, "lda=", lda, " ldu=", ldu, " ldvt=", ldvt, " lwork=", lwork
+    if (svd_verbose) then
+      print *, "m=", m, " n=", n
+      print *, "lda=", lda, " ldu=", ldu, " ldvt=", ldvt, " lwork=", lwork
+    end if
 
     allocate(work(lwork))
 
@@ -40,6 +44,12 @@ contains
 
     call dgesvd(jobu, jobvt, size(a,1), size(a,2), a, lda, &
       sigma, u, ldu, vt, ldvt, work, lwork, info)
+    if (svd_verbose) then
+      print *, "dgesvd info=", info
+      print *, "u max", maxval(u), " min", maxval(u)
+      print *, "sigma max", maxval(sigma), " min", maxval(sigma)
+      print *, "vt max", maxval(vt), " min", maxval(vt)
+    end if
 
     if (info.ne.0) then
       print *, "### Error in sgesvd."
