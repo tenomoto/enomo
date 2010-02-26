@@ -1,6 +1,6 @@
 PREFIX = ${HOME}/local
 FC = g95
-FFLAGS = -O2 -fendian=big -I/opt/local/include -framework accelerate
+FFLAGS = -O2 -fendian=big -I/opt/local/include
 AR = ar
 ARFLAGS = -cru
 TARGET = libenomo.a
