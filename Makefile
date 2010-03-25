@@ -56,5 +56,5 @@ time_module.o : kind_module.o
 udunits_module.o : kind_module.o
 #vis5d_module.o : kind_module.o time_module.o calendar_module.o
 search_module.o : kind_module.o
-svd_module : kind_module.o
+svd_module : kind_module.o matrix_module.o
 matrix_module : kind_module.o

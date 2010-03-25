@@ -7,7 +7,7 @@ module svd_module
 
   logical, public :: svd_verbose = .false.
 
-  public :: svd_init, svd_calc, svd_clean
+  public :: svd_init, svd_clean, svd_calc, svd_inverse
 
 contains
 
@@ -31,10 +31,10 @@ contains
 
   end subroutine svd_init
 
-  subroutine svd_calc(a,u,sigma,vt)
+  subroutine svd_calc(x,u,sigma,vt)
     implicit none
 
-    real(kind=dp), dimension(:,:), intent(in) :: a
+    real(kind=dp), dimension(:,:), intent(in) :: x
     real(kind=dp), dimension(:,:), intent(inout) :: u, vt
     real(kind=dp), dimension(:), intent(inout) :: sigma
 
@@ -42,7 +42,7 @@ contains
   
     integer(kind=i4b) :: info
 
-    call dgesvd(jobu, jobvt, size(a,1), size(a,2), a, lda, &
+    call dgesvd(jobu, jobvt, size(x,1), size(x,2), x, lda, &
       sigma, u, ldu, vt, ldvt, work, lwork, info)
     if (svd_verbose) then
       print *, "dgesvd info=", info
@@ -57,6 +57,30 @@ contains
     end if
 
   end subroutine svd_calc
+
+  subroutine svd_inverse(x,v,sigma,ainv)
+    use matrix_module, only: matrix_multiply
+! calculates inverse of A = XX'
+    implicit none
+
+    real(kind=dp), dimension(:,:), intent(in) :: x, v
+    real(kind=dp), dimension(:), intent(in) :: sigma
+    real(kind=dp), dimension(:,:), intent(inout) :: ainv
+
+    real(kind=dp), dimension(size(x,1),size(x,2)) :: xv
+    integer(kind=i4b) :: j
+
+    xv = matrix_multiply(x,v)
+    do j=1, size(sigma)
+      if (sigma(j)/=0) then
+        xv(:,j) = xv(:,j)/(sigma(j)**2)
+      else
+        xv(:,j) = 0
+      end if
+    end do
+    ainv = matrix_multiply(xv,transpose(xv))
+
+  end subroutine svd_inverse
 
   subroutine svd_clean()
     implicit none
