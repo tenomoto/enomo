@@ -3,7 +3,7 @@ module matrix_module
   implicit none
   private
 
-  public :: matrix_multiply
+  public :: matrix_multiply, matrix_vector_multiply
 
 contains
 
@@ -14,10 +14,11 @@ contains
     real(kind=dp), dimension(:,:), intent(in) :: b
 
     real(kind=dp), dimension(size(a,1),size(b,2)) :: c
+
     real(kind=dp), parameter :: alpha = 1.0d0, beta = 0.d0
+    character(len=1), parameter :: transa = "N", transb = "N"
 
     integer :: m, n, k, ka, kb, lda, ldb, ldc
-    character(len=1), parameter :: transa = "N", transb = "N"
 
     m = size(a,1)
     ka = size(a,2)
@@ -36,5 +37,27 @@ contains
     call dgemm(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
 
   end function matrix_multiply
+
+  function matrix_vector_multiply(a,x) result(y)
+    implicit none
+
+    real(kind=dp), dimension(:,:), intent(in) :: a
+    real(kind=dp), dimension(:), intent(in) :: x
+
+    real(kind=dp), dimension(size(x)) :: y
+
+    character(len=1), parameter :: trans = "N"
+    real(kind=dp), parameter :: alpha = 1.0d0, beta = 0.d0
+    integer(kind=i4b), parameter :: incx = 1, incy = 1
+
+    integer :: m, n, lda
+
+    m = size(a,1)
+    n = size(a,2)
+    lda = m
+
+    call dgemv(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+   
+  end function matrix_vector_multiply 
 
 end module matrix_module
