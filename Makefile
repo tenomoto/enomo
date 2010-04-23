@@ -9,7 +9,8 @@ SRC = kind_module.f90 math_module.f90 earth_module.f90 air_module.f90 water_modu
       confmap_module.f90 regrid_module.f90 upstream_module.f90 fft_module.f90          \
       vectrans_module.f90 calendar_module.f90 moist_module.f90 stability_module.f90    \
       string_module.f90 grads_module.f90 besttrack_module.f90 vectransf_module.f90 \
-      time_module.f90 udunits_module.f90 search_module.f90 svd_module.f90 matrix_module.f90
+      time_module.f90 udunits_module.f90 search_module.f90 svd_module.f90 matrix_module.f90 \
+      shtrans_module.f90 sigma_module.f90 shregrid_module.f90 sigmap_module.f90
 OBJ = ${SRC:%.f90=%.o}
 MOD = ${SRC:%.f90=%.mod}
 
@@ -43,8 +44,6 @@ confmap_module.o : kind_module.o math_module.o sphere_module.o
 regrid_module.o : kind_module.o math_module.o search_module.o
 upstream_module.o : kind_module.o math_module.o earth_module.o sphere_module.o regrid_module.o
 fft_module.o : kind_module.o
-vectrans_module.o : kind_module.o
-vectransf_module.o : kind_module.o
 calendar_module.o : kind_module.o string_module.o
 moist_module.o : kind_module.o math_module.o air_module.o water_module.o
 stability_module.o : kind_module.o math_module.o air_module.o water_module.o
@@ -56,5 +55,11 @@ time_module.o : kind_module.o
 udunits_module.o : kind_module.o
 #vis5d_module.o : kind_module.o time_module.o calendar_module.o
 search_module.o : kind_module.o
-svd_module : kind_module.o matrix_module.o
-matrix_module : kind_module.o
+svd_module.o : kind_module.o matrix_module.o
+matrix_module.o : kind_module.o
+shtrans_module.o : kind_module.o
+vectrans_module.o : kind_module.o shtrans_module.o
+vectransf_module.o : kind_module.o
+sigma_module.o : kind_module.o
+shregrid_module.o : kind_module.o
+sigmap_module.o : kind_module.o
