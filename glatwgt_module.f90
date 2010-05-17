@@ -66,10 +66,14 @@ contains
       w(j) = (2.0_dp*jMax + 1.0_dp)/(dpn)**2
     end do
 
+    w(jMax:jMid+1:-1) = w(1:jMid)
+    x(jMid+1:jMax) = x(1:jMid)
+    x(jMid:1:-1) = -x(jMid+1:jMax)
+
     if (glatwgt_verbose) then
       do j=1, jMid
         call legendre_P(x(j), pn)
-        print *, j, (pi/2-x(j))*rad2deg, pn, w(j)
+        print *, j, x(j)*rad2deg, pn, w(j)
         pn = abs(pn)
         if (pn>pn_max) then
           pn_max = pn
@@ -80,10 +84,6 @@ contains
       s = sum(w(1:jMid))
       print *, "sum of weights:", s, " error=", abs(1.0_dp - s)
     end if
-
-    w(jMax:jMid+1:-1) = w(1:jMid)
-    x(jMid+1:jMax) = x(1:jMid)
-    x(jMid:1:-1) = -x(jMid+1:jMax)
 
     call legendre_clean()
   
