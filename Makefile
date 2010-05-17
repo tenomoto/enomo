@@ -10,7 +10,7 @@ SRC = kind_module.f90 math_module.f90 earth_module.f90 air_module.f90 water_modu
       vectrans_module.f90 calendar_module.f90 moist_module.f90 stability_module.f90    \
       string_module.f90 grads_module.f90 besttrack_module.f90 vectransf_module.f90 \
       time_module.f90 udunits_module.f90 search_module.f90 svd_module.f90 matrix_module.f90 \
-      shtrans_module.f90 sigma_module.f90 shregrid_module.f90 sigmap_module.f90
+      shtrans_module.f90 sigma_module.f90 shregrid_module.f90 sigmap_module.f90 semiimplicit_module.f90
 OBJ = ${SRC:%.f90=%.o}
 MOD = ${SRC:%.f90=%.mod}
 
@@ -63,3 +63,4 @@ vectransf_module.o : kind_module.o
 sigma_module.o : kind_module.o
 shregrid_module.o : kind_module.o
 sigmap_module.o : kind_module.o
+semiimplicit_module.o : kind_module.o
