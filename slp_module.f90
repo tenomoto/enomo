@@ -56,7 +56,7 @@ contains
 
     gamma = gamma_st
 
-    ts = (1.0_dp + gamma_st*ra/g*(sl-1.0_dp))*tl
+    ts = (1.0_dp - gamma_st*ra/g*(sl-1.0_dp))*tl
     t0 = ts + gamma_st*zs
 
     where (abs(zs)<zsmin)
