@@ -60,7 +60,7 @@ contains
       guess = 2*x(l+1) - x(l+2) 
       call newton(legendre_P, legendre_dP, guess, x(l))
     end do
-    x(jMax:jMid+1:-1) = -pih+x(1:jMid)
+    x(jMax:jMid+1:-1) = pih-x(1:jMid)
     do j = 1, jMid
       call legendre_dP(x(j), dpn)
       w(j) = (2.0_dp*jMax + 1.0_dp)/(dpn)**2
