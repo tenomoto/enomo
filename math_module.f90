@@ -3,7 +3,7 @@ module math_module
   implicit none
 
   real(kind=dp), parameter, public :: &
-    math_pi  = 3.141592653589793, math_pi2 = 2.0_dp*math_pi, &
+    math_pi  = acos(-1.0_dp), math_pi2 = 2.0_dp*math_pi, &
     math_pih = 0.5_dp*math_pi, math_pir = 1.0_dp/math_pi, &
     math_deg2rad = math_pi/180.0_dp, math_rad2deg = 180.0_dp*math_pir, &
     math_nm2m = 1852.0_dp, math_knot2ms = math_nm2m/3600.0_dp, &
