@@ -24,7 +24,7 @@ module glatwgt_module
   logical, public :: glatwgt_verbose = .false.
 
   private :: legendre_init, legendre_P, legendre_dp, legendre_clean, newton
-  public :: glatwgt_calc, glatwgt_approx
+  public :: glatwgt_calc, glatwgt_approx, glatwgt_test
 
 contains
 
@@ -60,14 +60,13 @@ contains
       guess = 2*x(l+1) - x(l+2) 
       call newton(legendre_P, legendre_dP, guess, x(l))
     end do
-!    x(jMax:jMid+1:-1) = pi-x(1:jMid)
+    x(jMax:jMid+1:-1) = -pih+x(1:jMid)
     do j = 1, jMid
       call legendre_dP(x(j), dpn)
       w(j) = (2.0_dp*jMax + 1.0_dp)/(dpn)**2
     end do
 
     w(jMax:jMid+1:-1) = w(1:jMid)
-    x(jMid+1:jMax) = x(1:jMid)
     x(jMid:1:-1) = -x(jMid+1:jMax)
 
     if (glatwgt_verbose) then
@@ -104,116 +103,129 @@ contains
 
   end subroutine glatwgt_approx
 
+  subroutine glatwgt_test()
+    use math_module, only: rad2deg=>math_rad2deg
+
+    integer(kind=i4b), parameter :: &
+      ntrunc = 39, nlat = (ntrunc+1)*3/2
+    real(kind=dp), dimension(nlat) :: lat, wgt
+
+    glatwgt_verbose = .true.
+    call glatwgt_calc(lat,wgt,nlat)
+    glatwgt_verbose = .false.
+
+  end subroutine glatwgt_test
+
 ! private procedures
 
-subroutine legendre_init()
-  implicit none
+  subroutine legendre_init()
+    implicit none
 
-  real(kind=dp), parameter :: a0sq = 1.5_dp
-  integer(kind=i4b) :: k, l, n
+    real(kind=dp), parameter :: a0sq = 1.5_dp
+    integer(kind=i4b) :: k, l, n
 
-  n = jMid*2
-  allocate(an(0:jMid))
-  an(jMid) = a0sq
-  do k=2, n
-    an(jMid) = (1.0_dp-1.0_dp/(4.0_dp*k*k))*an(jMid)
-  end do
-  an(jMid) = sqrt(an(jMid))
+    n = jMid*2
+    allocate(an(0:jMid))
+    an(jMid) = a0sq
+    do k=2, n
+      an(jMid) = (1.0_dp-1.0_dp/(4.0_dp*k*k))*an(jMid)
+    end do
+    an(jMid) = sqrt(an(jMid))
 
-  do k=1, jMid
-    l = 2*k
-    an(jMid-k) = (l-1.0_dp)*(2.0_dp*n-l+2.0_dp)/(l*(2.0_dp*n-l+1.0_dp)) * an(jMid-k+1) 
-  end do
-  an(0) = 0.5_dp*an(0)
+    do k=1, jMid
+      l = 2*k
+      an(jMid-k) = (l-1.0_dp)*(2.0_dp*n-l+2.0_dp)/(l*(2.0_dp*n-l+1.0_dp)) * an(jMid-k+1) 
+    end do
+    an(0) = 0.5_dp*an(0)
 
-end subroutine legendre_init
+  end subroutine legendre_init
 
-subroutine legendre_P(theta, pn)
-  implicit none
+  subroutine legendre_P(theta, pn)
+    implicit none
 
-  real(kind=dp), intent(in) :: theta
-  real(kind=dp), intent(out) :: pn
-  integer(kind=i4b) :: k, l
+    real(kind=dp), intent(in) :: theta
+    real(kind=dp), intent(out) :: pn
+    integer(kind=i4b) :: k, l
 
-  pn = 0.0
-  do l=0, jMid
-    k=l*2 ! k = l*2 + 1 if n odd
-    pn = pn + an(l) * cos(k*theta)
-  end do
-  
-end subroutine legendre_P
+    pn = 0.0
+    do l=0, jMid
+      k=l*2 ! k = l*2 + 1 if n odd
+      pn = pn + an(l) * cos(k*theta)
+    end do
+    
+  end subroutine legendre_P
 
-subroutine legendre_dP(theta, dpn)
-  implicit none
+  subroutine legendre_dP(theta, dpn)
+    implicit none
 
-  real(kind=dp), intent(in) :: theta
-  real(kind=dp), intent(out) :: dpn
-  integer(kind=i4b) :: k, l
+    real(kind=dp), intent(in) :: theta
+    real(kind=dp), intent(out) :: dpn
+    integer(kind=i4b) :: k, l
 
-  dpn = 0.0
-  do l=1, jMid
-    k=l*2 ! k = l*2 + 1 if n odd
-    dpn = dpn - k * an(l) * sin(k*theta)
-  end do
-  
-end subroutine legendre_dP
+    dpn = 0.0
+    do l=1, jMid
+      k=l*2 ! k = l*2 + 1 if n odd
+      dpn = dpn - k * an(l) * sin(k*theta)
+    end do
+    
+  end subroutine legendre_dP
 
-subroutine legendre_clean()
+  subroutine legendre_clean()
 
-  deallocate(an)
+    deallocate(an)
 
-end subroutine legendre_clean
+  end subroutine legendre_clean
 
-subroutine newton(f, df, x0, x, tolerance)
-  implicit none
+  subroutine newton(f, df, x0, x, tolerance)
+    implicit none
 
-! finds the root u
+  ! finds the root u
 
-  interface
-    subroutine f(x, f_result)
-      use kind_module, only: dp, i4b
-      real(kind=dp), intent(in) :: x
-      real(kind=dp), intent(out) :: f_result
-    end subroutine f
-    subroutine df(x, f_result)
-      use kind_module, only: dp, i4b
-      real(kind=dp), intent(in) :: x
-      real(kind=dp), intent(out) :: f_result
-    end subroutine df
-  end interface
-  real(kind=dp), intent(in) :: x0
-  real(kind=dp), intent(out) :: x
-  real(kind=dp), optional, intent(in) :: tolerance
+    interface
+      subroutine f(x, f_result)
+        use kind_module, only: dp, i4b
+        real(kind=dp), intent(in) :: x
+        real(kind=dp), intent(out) :: f_result
+      end subroutine f
+      subroutine df(x, f_result)
+        use kind_module, only: dp, i4b
+        real(kind=dp), intent(in) :: x
+        real(kind=dp), intent(out) :: f_result
+      end subroutine df
+    end interface
+    real(kind=dp), intent(in) :: x0
+    real(kind=dp), intent(out) :: x
+    real(kind=dp), optional, intent(in) :: tolerance
 
-  integer(kind=i4b), parameter :: newton_max = 500
-  real(kind=dp) :: xacc = xacc_min
+    integer(kind=i4b), parameter :: newton_max = 500
+    real(kind=dp) :: xacc = xacc_min
 
-  real(kind=dp) :: y, dy
-  integer(kind=i4b) :: i
+    real(kind=dp) :: y, dy
+    integer(kind=i4b) :: i
 
-  if (present(tolerance)) then
-    if (tolerance < xacc_min) then
-      print *, "### Error in newton: tolerance too small"
-      stop
+    if (present(tolerance)) then
+      if (tolerance < xacc_min) then
+        print *, "### Error in newton: tolerance too small"
+        stop
+      else
+        xacc = tolerance
+      end if
     else
-      xacc = tolerance
+      xacc = xacc_min
     end if
-  else
-    xacc = xacc_min
-  end if
 
-  x = x0
-  do i = 1, newton_max
-    call f(x, y)
-    call df(x, dy)
-    y = y/dy
-    if (abs(y) < xacc) then
-      return
-    end if
-    x = x - y
-  end do
-  print *, "### Error in newton : Too many refinement."
-  
-end subroutine newton
+    x = x0
+    do i = 1, newton_max
+      call f(x, y)
+      call df(x, dy)
+      y = y/dy
+      if (abs(y) < xacc) then
+        return
+      end if
+      x = x - y
+    end do
+    print *, "### Error in newton : Too many refinement."
+    
+  end subroutine newton
 
 end module glatwgt_module
