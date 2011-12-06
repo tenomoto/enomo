@@ -71,7 +71,7 @@ contains
 
     if (glatwgt_verbose) then
       do j=1, jMid
-        call legendre_P(x(j), pn)
+        call legendre_P(pih-x(j), pn)
         print *, j, x(j)*rad2deg, pn, w(j)
         pn = abs(pn)
         if (pn>pn_max) then
@@ -110,9 +110,11 @@ contains
       ntrunc = 39, nlat = (ntrunc+1)*3/2
     real(kind=dp), dimension(nlat) :: lat, wgt
 
+    print *, "# ----- glatwgt_test() -----"
     glatwgt_verbose = .true.
     call glatwgt_calc(lat,wgt,nlat)
     glatwgt_verbose = .false.
+    print *, "# --------------------" 
 
   end subroutine glatwgt_test
 
