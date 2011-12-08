@@ -18,7 +18,6 @@ contains
 
   subroutine regrid_init(lon,lat,nn,mm)
     use math_module, only: pi=>math_pi, pi2=>math_pi2
-    use glatwgt_module, only: glatwgt_approx
     implicit none
 
     real(kind=dp), dimension(:), intent(in) :: lon, lat
