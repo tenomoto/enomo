@@ -60,14 +60,14 @@ contains
       guess = 2*x(l+1) - x(l+2) 
       call newton(legendre_P, legendre_dP, guess, x(l))
     end do
-    x(jMax:jMid+1:-1) = pih-x(1:jMid)
     do j = 1, jMid
       call legendre_dP(x(j), dpn)
       w(j) = (2.0_dp*jMax + 1.0_dp)/(dpn)**2
     end do
-
     w(jMax:jMid+1:-1) = w(1:jMid)
-    x(jMid:1:-1) = -x(jMid+1:jMax)
+
+    x(1:jMid) = pih-x(1:jMid)
+    x(jMid+1:jMax) = -x(jMid:1:-1)
 
     if (glatwgt_verbose) then
       do j=1, jMid
