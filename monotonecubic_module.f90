@@ -44,6 +44,6 @@ contains
       end if
     end do
 
-  end subrotuine monotonecubic_init
+  end subroutine monotonecubic_init
 
 end module monotonecubic_module
