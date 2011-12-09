@@ -78,7 +78,7 @@ contains
     real(kind=dp) :: w
 
     w = abs(x%p)
-    if (w>xreal_bigs) then
+    if (w>=xreal_bigs) then
       y%p = x%p*xreal_bigi
       y%i = x%i + 1
     else if (w<xreal_bigsi) then

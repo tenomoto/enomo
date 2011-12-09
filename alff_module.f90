@@ -258,7 +258,7 @@ contains
 
     integer(kind=i4b) :: ntrunc_low = 159, ntrunc_high = 2159
     integer(kind=i4b) :: nlat, n, m, j, jmaxh, nn, mm, ntrunc
-    real(kind=dp) :: x, dx, xx, dd, theta
+    real(kind=dp) :: x, dx, xx, dd, theta, t1, t2
 
     print *, "# ----- alff_test() -----" 
     if (present(nt_low)) then
@@ -271,7 +271,10 @@ contains
     jmaxh = size(alff_pnm,1)
     call glatwgt_calc(lat,wgt,nlat)
     call alff_init(ntrunc)
+    call cpu_time(t1)
     call alff_calc(lat)
+    call cpu_time(t2)
+    print *, "alff_calc cpu time=", t2-t1
     print *, "ntrunc=", ntrunc, " nlat=", nlat
     print *, "lat(1)=", lat(1)*rad2deg 
     print *, "m, pm(n=m,j=1), pm(n=ntrunc,j=1)"
@@ -306,7 +309,6 @@ contains
       end do
     end do
     print *, "x=", xx, " with max error= ", dd, " at (n,m)=(", nn, ",", mm, ")"
-print *, alff_pnm(j,ntrunc,ntrunc)
     deallocate(lat,wgt)
     call alff_clean()
 
@@ -314,6 +316,9 @@ print *, alff_pnm(j,ntrunc,ntrunc)
       ntrunc = nt_high
     else
       ntrunc = ntrunc_high
+    end if
+    if (ntrunc<0) then
+      return
     end if
     nlat = (ntrunc+1)*3/2
     j = nlat/10

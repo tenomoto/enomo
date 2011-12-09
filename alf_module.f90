@@ -163,7 +163,7 @@ contains
 
     integer(kind=i4b) :: ntrunc_low = 159, ntrunc_high = 2159
     integer(kind=i4b) :: nlat, n, m, j, jmaxh, nn, mm, ntrunc
-    real(kind=dp) :: x, dx, xx, dd
+    real(kind=dp) :: x, dx, xx, dd, t1, t2
 
     print *, "# ----- alf_test() -----" 
     if (present(nt_low)) then
@@ -176,7 +176,10 @@ contains
     jmaxh = size(alf_pnm,1)
     call glatwgt_calc(lat,wgt,nlat)
     call alf_init(ntrunc)
+    call cpu_time(t1)
     call alf_calc(lat)
+    call cpu_time(t2)
+    print *, "alf_calc cpu time=", t2-t1
     print *, "ntrunc=", ntrunc, " nlat=", nlat
     print *, "lat(1)=", lat(1)*rad2deg 
     print *, "m, pm(n=m,j=1), pm(n=ntrunc,j=1)"
@@ -218,6 +221,9 @@ contains
       ntrunc = nt_high
     else
       ntrunc = ntrunc_high
+    end if
+    if (ntrunc<0) then
+      return
     end if
     allocate(pmm(0:ntrunc),pnm(0:ntrunc))
     pmm(0) = pstart
