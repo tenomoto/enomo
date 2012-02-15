@@ -15,7 +15,7 @@ module alfx_module
 !  normalised to 1 by default. factor (-1)**m is not included.
 
   real(kind=dp), public, dimension(:,:,:), allocatable :: alfx_pnm
-  real(kind=dp), private :: pstart = sqrt(0.5_dp)
+  real(kind=dp), private :: pstart
 
   real(kind=dp), private, dimension(:), allocatable :: sinlat, coslat
   integer(kind=i4b), private :: mmax
@@ -74,6 +74,8 @@ contains
 
     if (present(p00)) then
       pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
     end if
     jmax = size(lat)
     jmaxh = jmax/2
@@ -309,7 +311,7 @@ contains
     type(xreal_type), dimension(:), allocatable :: pmm, pnm
 
     integer(kind=i4b) :: ntrunc_low = 159, ntrunc_high = 2159
-    integer(kind=i4b) :: nlat, n, m, j, jmaxh, nn, mm, ntrunc
+    integer(kind=i4b) :: nlat, n, m, j, nn, mm, ntrunc
     real(kind=dp) :: x, dx, xx, dd, t1, t2
 
     print *, "# ----- alfx_test() -----" 
@@ -320,7 +322,6 @@ contains
     end if
     nlat = (ntrunc+1)*3/2
     allocate(lat(nlat),wgt(nlat))
-    jmaxh = size(alfx_pnm,1)
     call glatwgt_calc(lat,wgt,nlat)
     call alfx_init(ntrunc)
     call cpu_time(t1)
@@ -356,7 +357,7 @@ contains
     mm = 0
     do m=0, ntrunc, ntrunc
       do n=m, ntrunc, ntrunc/d
-        x = alf_checksum(wgt(1:jmaxh),alfx_pnm(:,n,m))
+        x = alf_checksum(wgt,alfx_pnm(:,n,m))
         dx = 1.0_dp-x
         if (abs(dx)>dd) then
           xx = x

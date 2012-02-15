@@ -6,8 +6,8 @@ program test
   use alff_module, only: alff_test
   implicit none
 
-!  call xreal_test()
-!  call glatwgt_test()
+  call xreal_test()
+  call glatwgt_test()
   call alf_test(639,-1)
   call alfx_test(639,-1)
   call alff_test(639,-1)

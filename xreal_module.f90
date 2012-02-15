@@ -175,8 +175,11 @@ contains
     type(xreal_type), intent(in) :: x
     type(xreal_type) :: y
 
-    integer(kind=i4b), parameter :: i10 = nint(log10(xreal_big))
-    real(kind=dp), parameter :: p10 = xreal_big*10.0_dp**(-i10)
+    integer(kind=i4b) :: i10
+    real(kind=dp) :: p10
+
+    i10 = nint(log10(xreal_big))
+    p10 = xreal_big*10.0_dp**(-i10)
 
     y = x
     if (x%i/=0) then

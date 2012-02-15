@@ -20,7 +20,7 @@ module alff_module
   real(kind=dp), private, dimension(:,:), allocatable :: ank
 
   integer(kind=i4b), private :: mmax, jmax, jmaxh
-  real(kind=dp), private :: pstart = sqrt(0.5_dp)
+  real(kind=dp), private :: pstart
 
   public :: alff_init, alff_clean, alff_calc, &
     alff_calcp0, alff_calcp1, alff_calcpn, alff_test
@@ -100,6 +100,8 @@ contains
     
     if (present(p00)) then
       pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
     end if
     call fouriercoeff(pstart)
     jmax = size(lat)

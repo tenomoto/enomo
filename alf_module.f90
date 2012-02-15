@@ -20,7 +20,7 @@ module alf_module
   real(kind=dp), private, dimension(:), allocatable :: sinlat, coslat
 
   integer(kind=i4b), private :: mmax
-  real(kind=dp), private :: pstart = sqrt(0.5_dp)
+  real(kind=dp), private :: pstart
 
   public :: alf_init, alf_clean, alf_calc, &
     alf_calcps, alf_calcpn, alf_checksum, alf_test
@@ -77,6 +77,8 @@ contains
 
     if (present(p00)) then
       pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
     end if
     jmax = size(lat)
     jmaxh = jmax/2
@@ -147,8 +149,10 @@ contains
     real(kind=dp), dimension(:), intent(in) :: pj
 
     real(kind=dp) :: x, d, dx
+    integer(kind=i4b) :: jmaxh
 
-    x = 2.0_dp*sum(wgt(:)*pj(:)*pj(:))
+    jmaxh = size(pj)
+    x = 2.0_dp*sum(wgt(1:jmaxh)*pj(:)*pj(:))
 
   end function alf_checksum
   
@@ -162,7 +166,7 @@ contains
     real(kind=dp), dimension(:), allocatable :: lat, wgt, pmm, pnm
 
     integer(kind=i4b) :: ntrunc_low = 159, ntrunc_high = 2159
-    integer(kind=i4b) :: nlat, n, m, j, jmaxh, nn, mm, ntrunc
+    integer(kind=i4b) :: nlat, n, m, j, nn, mm, ntrunc
     real(kind=dp) :: x, dx, xx, dd, t1, t2
 
     print *, "# ----- alf_test() -----" 
@@ -173,7 +177,6 @@ contains
     end if
     nlat = (ntrunc+1)*3/2
     allocate(lat(nlat),wgt(nlat))
-    jmaxh = size(alf_pnm,1)
     call glatwgt_calc(lat,wgt,nlat)
     call alf_init(ntrunc)
     call cpu_time(t1)
@@ -203,7 +206,7 @@ contains
     mm = 0
     do m=0, ntrunc, ntrunc
       do n=m, ntrunc, ntrunc/d
-        x = alf_checksum(wgt(1:jmaxh),alf_pnm(:,n,m))
+        x = alf_checksum(wgt,alf_pnm(:,n,m))
         dx = 1.0_dp-x
         if (abs(dx)>dd) then
           xx = x
