@@ -72,7 +72,7 @@ contains
     if (glatwgt_verbose) then
       do j=1, jMid
         call legendre_P(pih-x(j), pn)
-        print *, j, x(j)*rad2deg, pn, w(j)
+!        print *, j, x(j)*rad2deg, pn, w(j)
         pn = abs(pn)
         if (pn>pn_max) then
           pn_max = pn
@@ -103,18 +103,24 @@ contains
 
   end subroutine glatwgt_approx
 
-  subroutine glatwgt_test()
+  subroutine glatwgt_test(nlat,un)
     use math_module, only: rad2deg=>math_rad2deg
 
-    integer(kind=i4b), parameter :: &
-      ntrunc = 39, nlat = (ntrunc+1)*3/2
-    real(kind=dp), dimension(nlat) :: lat, wgt
+    integer(kind=i4b) :: nlat
+    integer(kind=i4b), intent(in), optional :: un
 
+    real(kind=dp), dimension(:), allocatable :: lat, wgt
+
+    allocate(lat(nlat),wgt(nlat))
     print *, "# ----- glatwgt_test() -----"
     glatwgt_verbose = .true.
     call glatwgt_calc(lat,wgt,nlat)
+    if (present(un)) then
+      write(unit=un,fmt=*) lat
+      write(unit=un,fmt=*) wgt
+    end if
     glatwgt_verbose = .false.
-    print *, "# --------------------" 
+    deallocate(lat,wgt)
 
   end subroutine glatwgt_test
 

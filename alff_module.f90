@@ -16,14 +16,13 @@ module alff_module
   real(kind=dp), public, dimension(:,:,:), allocatable :: alff_pnm
 
   real(kind=dp), private, dimension(:,:), allocatable :: enm, fnm, gnm
-  real(kind=dp), private, dimension(:), allocatable :: sinlat, coslat, sqrtnnr
   real(kind=dp), private, dimension(:,:), allocatable :: ank
 
   integer(kind=i4b), private :: mmax, jmax, jmaxh
   real(kind=dp), private :: pstart
 
   public :: alff_init, alff_clean, alff_calc, &
-    alff_calcp0, alff_calcp1, alff_calcpn, alff_test
+    alff_calcp0, alff_calcp1, alff_calcpn, alff_test, alff_test_checksum
   private :: fouriercoeff
 
 contains
@@ -37,11 +36,8 @@ contains
 
     call alf_init(ntrunc)
     mmax = ntrunc
-    allocate(ank(mmax, 0:mmax/2),sqrtnnr(mmax))
+    allocate(ank(mmax, 0:mmax/2))
     ank(:,:) = 0.0_dp
-    do n=3, mmax
-      sqrtnnr(n) = 1.0_dp/sqrt(n*(n+1.0_dp))
-    end do
     allocate(enm(mmax,0:mmax),fnm(mmax,0:mmax),gnm(mmax,0:mmax))
     enm(:,:) = 0.0_dp
     fnm(:,:) = 0.0_dp
@@ -61,24 +57,9 @@ contains
   subroutine alff_clean()
     use alf_module, only: alf_clean
 
-    deallocate(ank,alff_pnm)
-    if (allocated(enm)) then
-      deallocate(enm)
-    end if
-    if (allocated(fnm)) then
-      deallocate(fnm)
-    end if
-    if (allocated(gnm)) then
-      deallocate(gnm)
-    end if
-    if (allocated(sinlat)) then
-      deallocate(sinlat)
-    end if
-    if (allocated(coslat)) then
-      deallocate(coslat)
-    end if
-    if (allocated(sqrtnnr)) then
-      deallocate(sqrtnnr)
+    deallocate(ank,enm,fnm,gnm)
+    if (allocated(alff_pnm)) then
+      deallocate(alff_pnm)
     end if
 
     call alf_clean()
@@ -95,7 +76,7 @@ contains
 
     integer(kind=i4b) :: j, m, n, k1, k2
     real(kind=dp) :: theta
-    real(kind=dp), dimension(:), allocatable :: pmm
+    real(kind=dp), dimension(:), allocatable :: pmm, sinlat, coslat
     real(kind=dp), dimension(:,:), allocatable :: pn
     
     if (present(p00)) then
@@ -140,6 +121,11 @@ contains
         alff_pnm(j,m:mmax,m) = pn(m:mmax,k2)
         call swap(k1,k2)
       end do
+    end do! j
+
+    do j=1, jmaxh
+
+      theta = pih-lat(j) ! lat => colat
 
       pn(1,1) = pmm(1) ! m = 1
       pn(2,1) = cm(1)*sinlat(j)*pmm(1)
@@ -161,7 +147,7 @@ contains
 
     end do! j
 
-    deallocate(pmm,pn)
+    deallocate(pmm,pn,sinlat,coslat)
 
   end subroutine alff_calc
 
@@ -215,15 +201,17 @@ contains
     real(kind=dp), dimension(0:), intent(inout) :: p1
 
     integer(kind=i4b) :: n, l, k, n2, nmod, nmax
+    real(kind=dp) :: sqrtnnr
 
       nmax = size(p1)-1
       do n=3, nmax
         n2 = n/2
         nmod = n - n2*2
         p1(n) = 0.0_dp
+        sqrtnnr = 1.0_dp/sqrt(n*(n+1.0_dp))
         do l=0, n2
           k = 2*l + nmod ! n even: k=2*l, n odd: k=2*l+1
-          p1(n) = p1(n) + ank(n,l)*k*sqrtnnr(n)*sin(k*theta)
+          p1(n) = p1(n) + ank(n,l)*k*sqrtnnr*sin(k*theta)
         end do
       end do
 
@@ -247,100 +235,184 @@ contains
 
   end subroutine alff_calcpn
 
-  subroutine alff_test(nt_low,nt_high)
+  subroutine alff_test(ntrunc,nlat,un)
     use math_module, only: rad2deg=>math_rad2deg
     use glatwgt_module, only: glatwgt_calc
     use alf_module, only: &
-      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm, alf_checksum
+      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
 
-    integer(kind=i4b), intent(in), optional :: nt_low, nt_high
+    integer(kind=i4b), intent(in) :: ntrunc, nlat
+    integer(kind=i4b), intent(in), optional :: un
 
-    integer(kind=i4b), parameter :: d = 10
     real(kind=dp), dimension(:), allocatable :: lat, wgt
 
-    integer(kind=i4b) :: ntrunc_low = 159, ntrunc_high = 2159
-    integer(kind=i4b) :: nlat, n, m, j, jmaxh, nn, mm, ntrunc
-    real(kind=dp) :: x, dx, xx, dd, theta, t1, t2
+    real(kind=dp) :: t1, t2
 
     print *, "# ----- alff_test() -----" 
-    if (present(nt_low)) then
-      ntrunc = nt_low
-    else
-      ntrunc = ntrunc_low
-    end if
-    nlat = (ntrunc+1)*3/2
+    print *, "ntrunc=", ntrunc, " nlat=", nlat
     allocate(lat(nlat),wgt(nlat))
-    jmaxh = size(alff_pnm,1)
     call glatwgt_calc(lat,wgt,nlat)
     call alff_init(ntrunc)
     call cpu_time(t1)
     call alff_calc(lat)
     call cpu_time(t2)
     print *, "alff_calc cpu time=", t2-t1
-    print *, "ntrunc=", ntrunc, " nlat=", nlat
-    print *, "lat(1)=", lat(1)*rad2deg 
-    print *, "m, pm(n=m,j=1), pm(n=ntrunc,j=1)"
-    do m=0, ntrunc, ntrunc/d
-      print *, m, alff_pnm(1,m,m), alff_pnm(1,ntrunc,m)
-    end do
-    do m=ntrunc-1, ntrunc
-      print *, m, alff_pnm(1,m,m), alff_pnm(1,ntrunc,m)
-    end do
-    print *, "n, pn(m=0,j=1), pn(m=1,j=1)"
-    do n=0, ntrunc, ntrunc/d 
-      print *, n, alff_pnm(1,n,0), alff_pnm(1,n,1)
-    end do
-    do n=ntrunc-1, ntrunc
-      print *, n, alff_pnm(1,n,0), alff_pnm(1,n,1)
-    end do
+    if (present(un)) then
+      write(unit=un,rec=1) alff_pnm
+    end if
+    call alff_clean()
+
+  end subroutine alff_test
+
+  subroutine alff_test_checksum(ntrunc,nlat,un)
+    use kind_module, only: dp, i4b
+    use math_module, only: pih=>math_pih
+    use integer_module, only: swap=>integer_swap
+    use glatwgt_module, only: glatwgt_calc
+    use alf_module, only: alf_checksum, alf_calcps, &
+      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
+
+    implicit none
+
+    integer(kind=i4b), intent(in) :: ntrunc, nlat
+    integer(kind=i4b), intent(in), optional :: un
+
+    real(kind=dp) :: xx, dd, x, dx, p00, theta
+    integer(kind=i4b) :: jmaxh, m, n, j, mm, nn, k1, k2
+    real(kind=dp), dimension(:), allocatable :: &
+      lat, sinlat, coslat, wgt, pmm, pn
+    real(kind=dp), dimension(:,:), allocatable ::  pjm
+    real(kind=dp), dimension(:,:,:), allocatable ::  pjn
+
+    print *, "# ----- alff_test_checksum() -----" 
     print *, "x=\int pnm pnm dx error"
+    print *, "ntrunc=", ntrunc, " nlat=", nlat
+
+    call alff_init(ntrunc)
+    jmaxh = nlat/2
+    allocate(lat(nlat),sinlat(jmaxh),coslat(jmaxh),wgt(nlat))
+    call glatwgt_calc(lat,wgt,nlat)
+    sinlat(:) = sin(lat(1:jmaxh))
+    coslat(:) = cos(lat(1:jmaxh))
+    allocate(pmm(0:ntrunc),pn(0:ntrunc), &
+      pjm(jmaxh,0:ntrunc),pjn(jmaxh,0:ntrunc,2))
+    pmm(:) = 0.0_dp
+    pn(:) = 0.0_dp
+
     xx = 1.0_dp
     dd = 0.0_dp
+    dx = 0.0_dp
     nn = 0
     mm = 0
-    do m=0, ntrunc, ntrunc
-      do n=m, ntrunc, ntrunc/d
-        x = alf_checksum(wgt(1:jmaxh),alff_pnm(:,n,m))
-        dx = 1.0_dp-x
+
+    p00 = sqrt(0.5_dp)
+    call fouriercoeff(p00)
+    pjn(:,:,:) = 0.0_dp
+    pjn(:,0,:) = p00
+
+    do j=1, jmaxh
+      pmm(0) = p00
+      call alf_calcps(coslat(j),dm,pmm)
+      pjm(j,:) = pmm(:)
+    end do
+    deallocate(pmm)
+
+! m = 0
+    do j=1, jmaxh
+      theta = pih-lat(j) ! lat => colat
+      pn(0) = pjm(j,0) ! m = 0
+      pn(1) = cm(0)*sinlat(j)*pjm(j,0)
+      call alff_calcp0(theta,pn)
+      pjn(j,0:mmax,1) = pn(:)
+    end do
+    do n=0, ntrunc
+      x = alf_checksum(wgt,pjn(:,n,1))
+      dx = 1.0_dp - x
+      if (present(un)) then
+        write(unit=un,fmt=*) n, m, x, abs(dx)!, dd
+      end if
+      if (abs(dx)>dd) then
+        xx = x
+        dd = abs(dx)
+        mm = m
+        nn = n
+      end if
+    end do
+! m even 
+    k1 = 1
+    k2 = 2
+    do m=2, mmax-2, 2 ! m even
+      do j=1, jmaxh
+        pjn(j,m,k2) = pjm(j,m)
+        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)
+        call alff_calcpn(m,pjn(j,:,k1),pjn(j,:,k2))
+      end do
+      do n=m, ntrunc
+        x = alf_checksum(wgt,pjn(:,n,k2))
+        dx = 1.0_dp - x
+        if (present(un)) then
+          write(unit=un,fmt=*) n, m, x, abs(dx)!, dd
+        end if
         if (abs(dx)>dd) then
           xx = x
-          dd = dx
+          dd = abs(dx)
           mm = m
           nn = n
         end if
       end do
+      call swap(k1,k2)
+    end do
+
+! m = 1
+    do j=1, jmaxh
+      theta = pih-lat(j) ! lat => colat
+      pn(1) = pjm(j,1) ! m = 1
+      pn(2) = cm(1)*sinlat(j)*pjm(j,1)
+      call alff_calcp1(theta,pn(:))
+      pjn(j,1:mmax,1) = pn(1:mmax)
+    end do
+    do n=1, ntrunc
+      x = alf_checksum(wgt,pjn(:,n,1))
+      dx = 1.0_dp - x
+      if (present(un)) then
+        write(unit=un,fmt=*) n, m, x, abs(dx)!, dd
+      end if
+      if (abs(dx)>dd) then
+        xx = x
+        dd = abs(dx)
+        mm = m
+        nn = n
+      end if
+    end do
+! m odd
+    k1 = 1
+    k2 = 2
+    do m=3, mmax-2, 2
+      do j=1, jmaxh
+        pjn(j,m,k2) = pjm(j,m)
+        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)  
+        call alff_calcpn(m,pjn(j,:,k1),pjn(j,:,k2))
+      end do
+      do n=m, ntrunc
+        x = alf_checksum(wgt,pjn(:,n,k2))
+        dx = 1.0_dp - x
+        if (present(un)) then
+          write(unit=un,fmt=*) n, m, x, abs(dx)!, dd
+        end if
+        if (abs(dx)>dd) then
+          xx = x
+          dd = abs(dx)
+          mm = m
+          nn = n
+        end if
+      end do
+      call swap(k1,k2)
     end do
     print *, "x=", xx, " with max error= ", dd, " at (n,m)=(", nn, ",", mm, ")"
-    deallocate(lat,wgt)
-    call alff_clean()
 
-    if (present(nt_high)) then
-      ntrunc = nt_high
-    else
-      ntrunc = ntrunc_high
-    end if
-    if (ntrunc<0) then
-      return
-    end if
-    nlat = (ntrunc+1)*3/2
-    j = nlat/10
-    allocate(lat(nlat),wgt(nlat))
-    call glatwgt_calc(lat,wgt,nlat)
-    print *, "ntrunc=", ntrunc, " nlat=", nlat
-    print *, "lat(j=", j, ")=", lat(j)*rad2deg 
-    call alff_init(ntrunc)
-    m = ntrunc/3
-    call alff_calc((/lat(j:j+1)/))
-    print *, "n, m, pn(m=", m, ",j=",j,")"
-    do n=m, ntrunc, ntrunc/d
-      print *, n, m, alff_pnm(1,n,m)
-    end do
-    do n=ntrunc-1, ntrunc
-      print *, n, m, alff_pnm(1,n,m)
-    end do
+    deallocate(lat,sinlat,coslat,wgt,pn,pjm,pjn)
     call alff_clean()
-    print *, "# --------------------" 
-
-  end subroutine alff_test
+    
+  end subroutine alff_test_checksum
 
 end module alff_module

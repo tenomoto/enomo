@@ -212,7 +212,6 @@ contains
     print *, "x/y=", z, xreal_base10(z)
     z = xreal_fxpgy(f,x,g,y)  
     print *, "fx+gy=", z, xreal_base10(z)
-    print *, "--------------------"
 
   end subroutine xreal_test
 
