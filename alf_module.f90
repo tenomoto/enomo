@@ -166,6 +166,7 @@ contains
 
     real(kind=dp), dimension(:), allocatable :: lat, wgt
     real(kind=dp) :: t1, t2
+    integer(kind=i4b) :: j
 
     print *, "# ----- alf_test() -----" 
     print *, "ntrunc=", ntrunc, " nlat=", nlat
@@ -177,7 +178,9 @@ contains
     call cpu_time(t2)
     print *, "alf_calc cpu time=", t2-t1
     if (present(un)) then
-      write(unit=un,rec=1) alf_pnm
+      do j=1, nlat
+        write(unit=un,rec=j) alf_pnm(j,:,:)
+      end do
     end if
     deallocate(lat,wgt)
     call alf_clean()

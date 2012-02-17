@@ -317,6 +317,7 @@ contains
 
     real(kind=dp), dimension(:), allocatable :: lat, wgt
     real(kind=dp) :: t1, t2
+    integer(kind=i4b) :: j
 
     print *, "# ----- alfx_test() -----" 
     print *, "ntrunc=", ntrunc, " nlat=", nlat
@@ -334,7 +335,9 @@ contains
     call cpu_time(t2)
     print *, "alfx_calc_inline cpu time=", t2-t1
     if (present(un)) then
-      write(unit=un,rec=1) alfx_pnm
+      do j=1, nlat
+        write(unit=un,rec=j) alfx_pnm(j,:,:)
+      end do
     end if
     deallocate(lat,wgt)
     call alfx_clean()
