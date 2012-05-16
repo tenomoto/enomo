@@ -13,11 +13,8 @@ module alf_module
 ! NB:
 !  normalised to 1 by default. factor (-1)**m is not included.
 
-  real(kind=dp), public, dimension(:,:,:), allocatable :: alf_pnm
   real(kind=dp), public, dimension(:,:), allocatable :: alf_anm, alf_bnm
   real(kind=dp), public, dimension(:), allocatable :: alf_cm, alf_dm
-
-  real(kind=dp), private, dimension(:), allocatable :: sinlat, coslat
 
   integer(kind=i4b), private :: mmax
   real(kind=dp), private :: pstart
@@ -55,25 +52,18 @@ contains
   subroutine alf_clean()
 
     deallocate(alf_anm,alf_bnm,alf_cm,alf_dm)
-    if (allocated(alf_pnm)) then
-      deallocate(alf_pnm)
-    end if
-    if (allocated(sinlat)) then
-      deallocate(sinlat)
-    end if
-    if (allocated(coslat)) then
-      deallocate(coslat)
-    end if
 
   end subroutine alf_clean
 
-  subroutine alf_calc(lat,p00)
+  subroutine alf_calc(lat,alf,p00)
     real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
     real(kind=dp), intent(in), optional :: p00
 
     integer(kind=i4b) :: j, m, n, jmax, jmaxh
 
-    real(kind=dp), dimension(:), allocatable :: pmm, pnm
+    real(kind=dp), dimension(0:mmax) :: pmm, pnm
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
 
     if (present(p00)) then
       pstart = p00
@@ -81,31 +71,55 @@ contains
       pstart = sqrt(0.5_dp)
     end if
     jmax = size(lat)
-    jmaxh = jmax/2
-    if (jmaxh<1) then
+    if (jmax<1) then
       return
     end if
 
-    allocate(alf_pnm(jmaxh, -1:mmax, 0:mmax))
-    alf_pnm(:,:,:) = 0.0_dp
-    allocate(sinlat(jmaxh),coslat(jmaxh))
-    sinlat(:) = sin(lat(1:jmaxh))
-    coslat(:) = cos(lat(1:jmaxh))
-    allocate(pmm(0:mmax),pnm(0:mmax))
+    alf(:,:,:) = 0.0_dp
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
     pmm(0) = pstart
-    do j=1, jmaxh
+    do j=1, min(jmax,size(alf,3))
       call alf_calcps(coslat(j),alf_dm,pmm)
       do m=0, mmax-1
         pnm(m) = pmm(m)
-        alf_pnm(j,m,m) = pmm(m)
+        alf(m,m,j) = pmm(m)
         call alf_calcpn(sinlat(j),m,alf_anm(:,m),alf_bnm(:,m),alf_cm(m),pnm)
-        alf_pnm(j,m+1:mmax,m) = pnm(m+1:mmax)
+        alf(m+1:mmax,m,j) = pnm(m+1:mmax)
       end do
-      alf_pnm(j,mmax,mmax) = pmm(mmax)
+      alf(mmax,mmax,j) = pmm(mmax)
     end do
-    deallocate(pmm,pnm)
 
   end subroutine alf_calc
+
+  subroutine alf_calcj(slat,clat,j,alf,p00)
+    real(kind=dp), dimension(:), intent(in) :: slat, clat
+    integer(kind=i4b), intent(in) :: j
+    real(kind=dp), dimension(0:,0:), intent(out) :: alf
+    real(kind=dp), intent(in), optional :: p00
+
+    integer(kind=i4b) :: m, n
+
+    real(kind=dp), dimension(0:mmax) :: pmm, pnm
+
+    if (present(p00)) then
+      pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
+    end if
+
+    alf(:,:) = 0.0_dp
+    pmm(0) = pstart
+    call alf_calcps(clat(j),alf_dm,pmm)
+    do m=0, mmax-1
+      pnm(m) = pmm(m)
+      alf(m,m) = pmm(m)
+      call alf_calcpn(slat(j),m,alf_anm(:,m),alf_bnm(:,m),alf_cm(m),pnm)
+      alf(m+1:mmax,m) = pnm(m+1:mmax)
+    end do
+    alf(mmax,mmax) = pmm(mmax)
+
+  end subroutine alf_calcj
 
   subroutine alf_calcps(u,d,ps)
 
@@ -133,7 +147,7 @@ contains
     integer(kind=i4b) :: n, nmax
 
     nmax = size(pn)-1
-    if (m>nmax) then
+    if (m+1>nmax) then
       return
     endif
 
@@ -165,23 +179,24 @@ contains
     integer(kind=i4b), intent(in), optional :: un
 
     real(kind=dp), dimension(:), allocatable :: lat, wgt
+    real(kind=dp), dimension(:,:,:), allocatable :: alf
     real(kind=dp) :: t1, t2
     integer(kind=i4b) :: j
 
     print *, "# ----- alf_test() -----" 
     print *, "ntrunc=", ntrunc, " nlat=", nlat
     allocate(lat(nlat),wgt(nlat))
+    allocate(alf(0:ntrunc,0:ntrunc,nlat/2))
     call glatwgt_calc(lat,wgt,nlat)
     call alf_init(ntrunc)
     call cpu_time(t1)
-    call alf_calc(lat)
+    call alf_calc(lat(1:nlat/2),alf)
     call cpu_time(t2)
     print *, "alf_calc cpu time=", t2-t1
     if (present(un)) then
-      do j=1, nlat
-        write(unit=un,rec=j) alf_pnm(j,:,:)
-      end do
+      write(unit=un,rec=1) alf
     end if
+    deallocate(alf)
     deallocate(lat,wgt)
     call alf_clean()
     

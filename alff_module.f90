@@ -13,8 +13,6 @@ module alff_module
 ! NB:
 !  normalised to 1 by default. factor (-1)**m is not included.
 
-  real(kind=dp), public, dimension(:,:,:), allocatable :: alff_pnm
-
   real(kind=dp), private, dimension(:,:), allocatable :: enm, fnm, gnm
   real(kind=dp), private, dimension(:,:), allocatable :: ank
 
@@ -58,26 +56,25 @@ contains
     use alf_module, only: alf_clean
 
     deallocate(ank,enm,fnm,gnm)
-    if (allocated(alff_pnm)) then
-      deallocate(alff_pnm)
-    end if
 
     call alf_clean()
 
   end subroutine alff_clean
   
-  subroutine alff_calc(lat,p00)
+  subroutine alff_calc(lat,alf,p00)
     use math_module, only: pih=>math_pih
     use integer_module, only: swap=>integer_swap
     use alf_module, only: cm=>alf_cm, dm=>alf_dm, alf_calcps
 
     real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
     real(kind=dp), intent(in), optional :: p00
 
     integer(kind=i4b) :: j, m, n, k1, k2
     real(kind=dp) :: theta
-    real(kind=dp), dimension(:), allocatable :: pmm, sinlat, coslat
-    real(kind=dp), dimension(:,:), allocatable :: pn
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
+    real(kind=dp), dimension(0:mmax) :: pmm
+    real(kind=dp), dimension(0:mmax,2) :: pn
     
     if (present(p00)) then
       pstart = p00
@@ -86,21 +83,15 @@ contains
     end if
     call fouriercoeff(pstart)
     jmax = size(lat)
-    jmaxh = jmax/2
-    if (jmaxh>=1) then
-      allocate(alff_pnm(jmaxh, -1:mmax, 0:mmax))
-      alff_pnm(:,:,:) = 0.0_dp
-      alff_pnm(:,0,0) = pstart
-    end if
-    allocate(sinlat(jmaxh),coslat(jmaxh))
-    sinlat(:) = sin(lat(1:jmaxh))
-    coslat(:) = cos(lat(1:jmaxh))
-    allocate(pmm(0:mmax),pn(0:mmax,2))
+    alf(:,:,:) = 0.0_dp
+    alf(0,0,:) = pstart
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
     pmm(:) = 0.0_dp
     pn(:,:) = 0.0_dp
 
 ! calculate Pnm
-    do j=1, jmaxh
+    do j=1, min(jmax,size(alf,3))
 
       theta = pih-lat(j) ! lat => colat
 
@@ -111,43 +102,41 @@ contains
       pn(0,1) = pmm(0) ! m = 0
       pn(1,1) = cm(0)*sinlat(j)*pmm(0)
       call alff_calcp0(theta,pn(:,1))
-      alff_pnm(j,0:mmax,0) = pn(0:mmax,1)
+      alf(0:mmax,0,j) = pn(0:mmax,1)
       k1 = 1
       k2 = 2
       do m=2, mmax-2, 2 ! m even
         pn(m,k2) = pmm(m)
         pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
         call alff_calcpn(m,pn(:,k1),pn(:,k2))
-        alff_pnm(j,m:mmax,m) = pn(m:mmax,k2)
+        alf(m:mmax,m,j) = pn(m:mmax,k2)
         call swap(k1,k2)
       end do
     end do! j
 
-    do j=1, jmaxh
+    do j=1, jmax
 
       theta = pih-lat(j) ! lat => colat
 
       pn(1,1) = pmm(1) ! m = 1
       pn(2,1) = cm(1)*sinlat(j)*pmm(1)
       call alff_calcp1(theta,pn(:,1))
-      alff_pnm(j,1:mmax,1) = pn(1:mmax,1)
+      alf(1:mmax,1,j) = pn(1:mmax,1)
       k1 = 1
       k2 = 2
       do m=3, mmax-2, 2 ! m odd
         pn(m,k2) = pmm(m)
         pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
         call alff_calcpn(m,pn(:,k1),pn(:,k2))
-        alff_pnm(j,m:mmax,m) = pn(m:mmax,k2)
+        alf(m:mmax,m,j) = pn(m:mmax,k2)
         call swap(k1,k2)
       end do
-      alff_pnm(j,mmax,mmax-1) = cm(mmax-1)*sinlat(j)*pmm(mmax-1)
+      alf(mmax,mmax-1,j) = cm(mmax-1)*sinlat(j)*pmm(mmax-1)
       do m=mmax-1, mmax
-        alff_pnm(j,m,m) = pmm(m)
+        alf(m,m,j) = pmm(m)
       end do
 
     end do! j
-
-    deallocate(pmm,pn,sinlat,coslat)
 
   end subroutine alff_calc
 
@@ -245,6 +234,7 @@ contains
     integer(kind=i4b), intent(in), optional :: un
 
     real(kind=dp), dimension(:), allocatable :: lat, wgt
+    real(kind=dp), dimension(:,:,:), allocatable :: alf
 
     real(kind=dp) :: t1, t2
     integer(kind=i4b) :: j
@@ -252,16 +242,15 @@ contains
     print *, "# ----- alff_test() -----" 
     print *, "ntrunc=", ntrunc, " nlat=", nlat
     allocate(lat(nlat),wgt(nlat))
+    allocate(alf(0:ntrunc,0:ntrunc,nlat/2))
     call glatwgt_calc(lat,wgt,nlat)
     call alff_init(ntrunc)
     call cpu_time(t1)
-    call alff_calc(lat)
+    call alff_calc(lat(1:nlat/2),alf)
     call cpu_time(t2)
     print *, "alff_calc cpu time=", t2-t1
     if (present(un)) then
-      do j=1, nlat
-        write(unit=un,rec=j) alff_pnm(j,:,:)
-      end do
+      write(unit=un,rec=1) alf
     end if
     call alff_clean()
 

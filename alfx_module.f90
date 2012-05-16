@@ -14,10 +14,8 @@ module alfx_module
 ! NB:
 !  normalised to 1 by default. factor (-1)**m is not included.
 
-  real(kind=dp), public, dimension(:,:,:), allocatable :: alfx_pnm
   real(kind=dp), private :: pstart
 
-  real(kind=dp), private, dimension(:), allocatable :: sinlat, coslat
   integer(kind=i4b), private :: mmax
 
   interface alfx_calcps
@@ -47,30 +45,22 @@ contains
   subroutine alfx_clean()
     use alf_module, only: alf_clean
 
-    if (allocated(alfx_pnm)) then
-      deallocate(alfx_pnm)
-    end if
-    if (allocated(sinlat)) then
-      deallocate(sinlat)
-    end if
-    if (allocated(coslat)) then
-      deallocate(coslat)
-    end if
-
     call alf_clean()
 
   end subroutine alfx_clean
 
-  subroutine alfx_calc(lat,p00)
+  subroutine alfx_calc(lat,alf,p00)
     use xreal_module, only: xreal_type, assignment(=)
     use alf_module, only: &
       anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
     real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
     real(kind=dp), intent(in), optional :: p00
 
-    integer(kind=i4b) :: j, m, n, jmax, jmaxh
+    integer(kind=i4b) :: j, m, n, jmax
 
-    type(xreal_type), dimension(:), allocatable :: pmm, pnm
+    type(xreal_type), dimension(0:mmax) :: pmm, pnm
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
 
     if (present(p00)) then
       pstart = p00
@@ -78,89 +68,83 @@ contains
       pstart = sqrt(0.5_dp)
     end if
     jmax = size(lat)
-    jmaxh = jmax/2
-    if (jmaxh<1) then
+    if (jmax<1) then
       return
     end if
 
-    allocate(alfx_pnm(jmaxh, -1:mmax, 0:mmax))
-    alfx_pnm(:,:,:) = 0.0_dp
-    allocate(sinlat(jmaxh),coslat(jmaxh))
-    sinlat(:) = sin(lat(1:jmaxh))
-    coslat(:) = cos(lat(1:jmaxh))
-    allocate(pmm(0:mmax),pnm(0:mmax))
+    alf(:,:,:) = 0.0_dp
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
     pmm(0) = pstart
-    do j=1, jmaxh
+    do j=1, min(jmax,size(alf,3))
       call alfx_calcps(coslat(j),dm,pmm)
-      do m=0, mmax
+      do m=0, mmax-1
         pnm(m) = pmm(m)
-        alfx_pnm(j,m,m) = pmm(m)
+        alf(m,m,j) = pmm(m)
         call alfx_calcpn(sinlat(j),m,anm(:,m),bnm(:,m),cm(m),pnm)
         do n=m+1, mmax
-          alfx_pnm(j,n,m) = pnm(n)
+          alf(n,m,j) = pnm(n)
         end do
       end do
+      alf(mmax,mmax,j) = pmm(mmax)
     end do
-    deallocate(pmm,pnm)
 
   end subroutine alfx_calc
 
-  subroutine alfx_calc_inline(lat,p00)
+  subroutine alfx_calc_inline(lat,alf,p00)
     use xreal_module, only: big=>xreal_big, bigi=>xreal_bigi
     use alf_module, only: &
       anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
     real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
     real(kind=dp), intent(in), optional :: p00
 
     integer(kind=i4b) :: j, m, n, jmax, jmaxh
 
-    real(kind=dp), dimension(:), allocatable :: pmm, pnm
-    integer(kind=i4b), dimension(:), allocatable :: ipmm, ipnm
+    real(kind=dp), dimension(0:mmax) :: pmm, pnm
+    integer(kind=i4b), dimension(0:mmax) :: ipmm, ipnm
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
 
     if (present(p00)) then
       pstart = p00
     end if
     jmax = size(lat)
-    jmaxh = jmax/2
-    if (jmaxh<1) then
+    if (jmax<1) then
       return
     end if
 
-    allocate(alfx_pnm(jmaxh, -1:mmax, 0:mmax))
-    alfx_pnm(:,:,:) = 0.0_dp
-    allocate(sinlat(jmaxh),coslat(jmaxh))
-    sinlat(:) = sin(lat(1:jmaxh))
-    coslat(:) = cos(lat(1:jmaxh))
-    allocate(pmm(0:mmax),pnm(0:mmax),ipmm(0:mmax),ipnm(0:mmax))
+    alf(:,:,:) = 0.0_dp
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
     pmm(0)  = pstart
     ipmm(0) = 0
-    do j=1, jmaxh
+    do j=1, min(jmax,size(alf,3))
       call alfx_calcps(coslat(j),dm,pmm,ipmm)
-      do m=0, mmax
+      do m=0, mmax-1
         pnm(m)  = pmm(m)
         ipnm(m) = ipmm(m)
         select case (ipmm(m))
           case(0)
-            alfx_pnm(j,m,m) = pmm(m)
+            alf(m,m,j) = pmm(m)
           case(:-1)
-            alfx_pnm(j,m,m) = pmm(m)*bigi
+            alf(m,m,j) = pmm(m)*bigi
           case(1:)
-            alfx_pnm(j,m,m) = pmm(m)*big
+            alf(m,m,j) = pmm(m)*big
         end select
         call alfx_calcpn(sinlat(j),m,anm(:,m),bnm(:,m),cm(m),pnm,ipnm)
         do n=m+1, mmax
           select case (ipnm(n))
             case(0)
-              alfx_pnm(j,n,m) = pnm(n)
+              alf(n,m,j) = pnm(n)
             case(:-1)
-              alfx_pnm(j,n,m) = pnm(n)*bigi
+              alf(n,m,j) = pnm(n)*bigi
             case(1:)
-              alfx_pnm(j,n,m) = pnm(n)*big
+              alf(n,m,j) = pnm(n)*big
           end select
         end do
       end do
+      alf(mmax,mmax,j) = pmm(mmax)
     end do
-    deallocate(pmm,pnm,ipmm,ipnm)
 
   end subroutine alfx_calc_inline
 
@@ -224,7 +208,7 @@ contains
     integer(kind=i4b) :: n, nmax
 
     nmax = size(pn)-1
-    if (m>nmax) then
+    if (m+1>nmax) then
       return
     endif
 
@@ -248,9 +232,10 @@ contains
 
     integer(kind=i4b) :: n, nmax, ix, iy, iz, id
     real(kind=dp) :: x, y, z, w
+    
 
     nmax = size(pn)-1
-    if (m>nmax) then
+    if (m+1>nmax) then
       return
     endif
 
@@ -309,36 +294,37 @@ contains
     use math_module, only: rad2deg=>math_rad2deg
     use xreal_module, only: xreal_type, xreal_base10, assignment(=)
     use glatwgt_module, only: glatwgt_calc
-    use alf_module, only: &
-      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
 
     integer(kind=i4b), intent(in) :: ntrunc, nlat
     integer(kind=i4b), intent(in), optional :: un
 
     real(kind=dp), dimension(:), allocatable :: lat, wgt
+    real(kind=dp), dimension(:,:,:), allocatable :: alf
     real(kind=dp) :: t1, t2
     integer(kind=i4b) :: j
 
     print *, "# ----- alfx_test() -----" 
     print *, "ntrunc=", ntrunc, " nlat=", nlat
     allocate(lat(nlat),wgt(nlat))
+    allocate(alf(0:ntrunc,0:ntrunc,nlat/2))
     call glatwgt_calc(lat,wgt,nlat)
     call alfx_init(ntrunc)
     call cpu_time(t1)
-    call alfx_calc(lat)
+    call alfx_calc(lat(1:nlat/2),alf)
     call cpu_time(t2)
     print *, "alfx_calc cpu time=", t2-t1
     call alfx_clean()
     call alfx_init(ntrunc)
     call cpu_time(t1)
-    call alfx_calc_inline(lat)
+    call alfx_calc_inline(lat(1:nlat/2),alf)
     call cpu_time(t2)
     print *, "alfx_calc_inline cpu time=", t2-t1
     if (present(un)) then
       do j=1, nlat
-        write(unit=un,rec=j) alfx_pnm(j,:,:)
+        write(unit=un,rec=1) alf
       end do
     end if
+    deallocate(alf)
     deallocate(lat,wgt)
     call alfx_clean()
 
