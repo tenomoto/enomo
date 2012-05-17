@@ -33,23 +33,20 @@ module alfx_module
 contains
 
   subroutine alfx_init(ntrunc)
-    use alf_module, only: alf_init, alf_clean, alf_ntrunc
+    use alf_module, only: alf_init
     integer(kind=i4b), intent(in) :: ntrunc
 
+!    print *, "alfx_init"
     alfx_ntrunc = ntrunc
 
-    if (alf_ntrunc/=ntrunc) then
-      if (alf_ntrunc/=0) then
-        call alf_clean()
-      end if
-      call alf_init(ntrunc)
-    end if
+    call alf_init(ntrunc)
 
   end subroutine alfx_init
 
   subroutine alfx_clean()
     use alf_module, only: alf_clean
 
+!    print *, "alfx_clean"
     call alf_clean()
 
   end subroutine alfx_clean

@@ -15,9 +15,10 @@ module alf_module
 
   real(kind=dp), public, dimension(:,:), allocatable :: alf_anm, alf_bnm
   real(kind=dp), public, dimension(:), allocatable :: alf_cm, alf_dm
-  integer(kind=i4b), public :: alf_ntrunc = 0
-
+  
+  integer(kind=i4b), private :: alf_ntrunc = 0
   real(kind=dp), private :: pstart
+  integer, private :: retain = 0
 
   public :: alf_init, alf_clean, alf_calc, &
     alf_calcps, alf_calcpn, alf_checksum, alf_test, alf_test_checksum
@@ -29,7 +30,14 @@ contains
 
     integer(kind=i4b) :: n, m
 
+!    print *, "alf_init"
+    if (alf_ntrunc==ntrunc) then
+      retain = retain + 1
+!      print *, retain
+      return
+    end if
     alf_ntrunc = ntrunc
+!    print *, "Allocating alf_anm, alf_bnm, alf_cm, alf_dm"
 
     allocate(alf_cm(0:ntrunc),alf_dm(ntrunc))
     do m=0, ntrunc-1
@@ -46,13 +54,21 @@ contains
         alf_anm(n,m) = alf_anm(n,m)*sqrt(2.0_dp*n-1.0_dp)
       end do
     end do
+    retain = retain + 1
+    print *, retain
 
   end subroutine alf_init
 
   subroutine alf_clean()
 
-    deallocate(alf_anm,alf_bnm,alf_cm,alf_dm)
-    alf_ntrunc = 0
+!    print *, "alf_clean"
+    retain = retain - 1 
+!    print *, retain
+    if (retain<1) then
+!      print *, "Deallocating alf_anm, alf_bnm, alf_cm, alf_dm"
+      deallocate(alf_anm,alf_bnm,alf_cm,alf_dm)
+      alf_ntrunc = 0
+    end if
 
   end subroutine alf_clean
 
