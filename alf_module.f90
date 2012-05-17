@@ -15,8 +15,8 @@ module alf_module
 
   real(kind=dp), public, dimension(:,:), allocatable :: alf_anm, alf_bnm
   real(kind=dp), public, dimension(:), allocatable :: alf_cm, alf_dm
+  integer(kind=i4b), public :: alf_ntrunc = 0
 
-  integer(kind=i4b), private :: mmax
   real(kind=dp), private :: pstart
 
   public :: alf_init, alf_clean, alf_calc, &
@@ -29,18 +29,18 @@ contains
 
     integer(kind=i4b) :: n, m
 
-    mmax = ntrunc
+    alf_ntrunc = ntrunc
 
-    allocate(alf_cm(0:mmax),alf_dm(mmax))
-    do m=0, mmax-1
+    allocate(alf_cm(0:ntrunc),alf_dm(ntrunc))
+    do m=0, ntrunc-1
       alf_cm(m) = sqrt(2.0_dp*m+3.0_dp)
     end do
-    do m=1, mmax
+    do m=1, ntrunc
       alf_dm(m) = sqrt(1.0_dp + 0.5_dp/real(m,kind=dp))
     end do
-    allocate(alf_anm(mmax,0:mmax),alf_bnm(mmax,0:mmax))
-    do m=0, mmax
-      do n=m+2, mmax
+    allocate(alf_anm(ntrunc,0:ntrunc),alf_bnm(ntrunc,0:ntrunc))
+    do m=0, ntrunc
+      do n=m+2, ntrunc
         alf_anm(n,m) = sqrt((2.0_dp*n+1.0_dp)/real(n**2-m**2,kind=dp))
         alf_bnm(n,m) = alf_anm(n,m)*sqrt((n+m-1.0_dp)*(n-m-1.0_dp)/(2.0_dp*n-3.0_dp))
         alf_anm(n,m) = alf_anm(n,m)*sqrt(2.0_dp*n-1.0_dp)
@@ -52,6 +52,7 @@ contains
   subroutine alf_clean()
 
     deallocate(alf_anm,alf_bnm,alf_cm,alf_dm)
+    alf_ntrunc = 0
 
   end subroutine alf_clean
 
@@ -60,11 +61,12 @@ contains
     real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
     real(kind=dp), intent(in), optional :: p00
 
-    integer(kind=i4b) :: j, m, n, jmax, jmaxh
+    integer(kind=i4b) :: j, m, n, jmax, jmaxh, mmax
 
-    real(kind=dp), dimension(0:mmax) :: pmm, pnm
+    real(kind=dp), dimension(0:size(alf,1)-1) :: pmm, pnm
     real(kind=dp), dimension(size(lat)) :: sinlat, coslat
 
+    mmax =  size(alf,1) - 1
     if (present(p00)) then
       pstart = p00
     else
@@ -91,35 +93,6 @@ contains
     end do
 
   end subroutine alf_calc
-
-  subroutine alf_calcj(slat,clat,j,alf,p00)
-    real(kind=dp), dimension(:), intent(in) :: slat, clat
-    integer(kind=i4b), intent(in) :: j
-    real(kind=dp), dimension(0:,0:), intent(out) :: alf
-    real(kind=dp), intent(in), optional :: p00
-
-    integer(kind=i4b) :: m, n
-
-    real(kind=dp), dimension(0:mmax) :: pmm, pnm
-
-    if (present(p00)) then
-      pstart = p00
-    else
-      pstart = sqrt(0.5_dp)
-    end if
-
-    alf(:,:) = 0.0_dp
-    pmm(0) = pstart
-    call alf_calcps(clat(j),alf_dm,pmm)
-    do m=0, mmax-1
-      pnm(m) = pmm(m)
-      alf(m,m) = pmm(m)
-      call alf_calcpn(slat(j),m,alf_anm(:,m),alf_bnm(:,m),alf_cm(m),pnm)
-      alf(m+1:mmax,m) = pnm(m+1:mmax)
-    end do
-    alf(mmax,mmax) = pmm(mmax)
-
-  end subroutine alf_calcj
 
   subroutine alf_calcps(u,d,ps)
 
@@ -152,7 +125,7 @@ contains
     endif
 
     pn(m+1) = c*t*pn(m)
-    do n=m+2, mmax
+    do n=m+2, nmax
       pn(n) = an(n)*t*pn(n-1)-bn(n)*pn(n-2)
     end do
 

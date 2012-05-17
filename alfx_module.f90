@@ -16,7 +16,7 @@ module alfx_module
 
   real(kind=dp), private :: pstart
 
-  integer(kind=i4b), private :: mmax
+  integer(kind=i4b), private :: alfx_ntrunc
 
   interface alfx_calcps
     module procedure alfsp, alfsx
@@ -33,12 +33,17 @@ module alfx_module
 contains
 
   subroutine alfx_init(ntrunc)
-    use alf_module, only: alf_init
+    use alf_module, only: alf_init, alf_clean, alf_ntrunc
     integer(kind=i4b), intent(in) :: ntrunc
 
-    mmax = ntrunc
+    alfx_ntrunc = ntrunc
 
-    call alf_init(ntrunc)
+    if (alf_ntrunc/=ntrunc) then
+      if (alf_ntrunc/=0) then
+        call alf_clean()
+      end if
+      call alf_init(ntrunc)
+    end if
 
   end subroutine alfx_init
 
@@ -57,11 +62,12 @@ contains
     real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
     real(kind=dp), intent(in), optional :: p00
 
-    integer(kind=i4b) :: j, m, n, jmax
+    integer(kind=i4b) :: j, m, n, jmax, mmax
 
-    type(xreal_type), dimension(0:mmax) :: pmm, pnm
+    type(xreal_type), dimension(0:size(alf,1)-1) :: pmm, pnm
     real(kind=dp), dimension(size(lat)) :: sinlat, coslat
 
+    mmax =  size(alf,1) - 1
     if (present(p00)) then
       pstart = p00
     else
@@ -99,12 +105,13 @@ contains
     real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
     real(kind=dp), intent(in), optional :: p00
 
-    integer(kind=i4b) :: j, m, n, jmax, jmaxh
+    integer(kind=i4b) :: j, m, n, jmax, jmaxh, mmax
 
-    real(kind=dp), dimension(0:mmax) :: pmm, pnm
-    integer(kind=i4b), dimension(0:mmax) :: ipmm, ipnm
+    real(kind=dp), dimension(0:size(alf,1)-1) :: pmm, pnm
+    integer(kind=i4b), dimension(0:size(alf,1)-1) :: ipmm, ipnm
     real(kind=dp), dimension(size(lat)) :: sinlat, coslat
 
+    mmax =  size(alf,1) - 1
     if (present(p00)) then
       pstart = p00
     end if
@@ -213,7 +220,7 @@ contains
     endif
 
     pn(m+1) = c*t*pn(m)
-    do n=m+2, mmax
+    do n=m+2, nmax
       pn(n) = xreal_fxpgy(an(n)*t,pn(n-1),-bn(n),pn(n-2))
     end do
 
@@ -253,7 +260,7 @@ contains
     end if
     pn(m+1)  = x
     ipn(m+1) = ix
-    do n=m+2, mmax
+    do n=m+2, nmax
       id = ix - iy
       select case(id)
         case(0)

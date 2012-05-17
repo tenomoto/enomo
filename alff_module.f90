@@ -26,13 +26,18 @@ module alff_module
 contains
 
   subroutine alff_init(ntrunc)
-    use alf_module, only: alf_init
+    use alf_module, only: alf_init, alf_clean, alf_ntrunc
 
     integer(kind=i4b), intent(in) :: ntrunc
 
     integer(kind=i4b) :: n, m
 
-    call alf_init(ntrunc)
+    if (alf_ntrunc/=ntrunc) then
+      if (alf_ntrunc/=0) then
+        call alf_clean()
+      end if
+      call alf_init(ntrunc)
+    end if
     mmax = ntrunc
     allocate(ank(mmax, 0:mmax/2))
     ank(:,:) = 0.0_dp
