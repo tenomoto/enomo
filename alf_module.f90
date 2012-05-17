@@ -55,7 +55,7 @@ contains
       end do
     end do
     retain = retain + 1
-    print *, retain
+!    print *, retain
 
   end subroutine alf_init
 
