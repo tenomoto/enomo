@@ -147,8 +147,15 @@ contains
           end select
         end do
       end do
-      alf(mmax,mmax,j) = pmm(mmax)
-    end do
+      select case (ipmm(mmax))
+        case(0)
+          alf(mmax,mmax,j) = pmm(mmax)
+        case(:-1)
+          alf(mmax,mmax,j) = pmm(mmax)*bigi
+        case(1:)
+          alf(mmax,mmax,j) = pmm(mmax)*big
+      end select
+   end do
 
   end subroutine alfx_calc_inline
 
@@ -237,7 +244,6 @@ contains
     integer(kind=i4b) :: n, nmax, ix, iy, iz, id
     real(kind=dp) :: x, y, z, w
     
-
     nmax = size(pn)-1
     if (m+1>nmax) then
       return
@@ -277,7 +283,7 @@ contains
           iz = iy
       end select
       w = abs(z)
-      if (w>bigs) then
+      if (w>=bigs) then
         z = z*bigi
         iz = iz + 1
       else if (w<bigsi) then

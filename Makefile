@@ -1,9 +1,12 @@
 PREFIX = ${HOME}/local
 FC = g95
+#FC = gfortran-mp-4.5
+NAME = enomo_g95
 FFLAGS = -O2 -fendian=big -I/opt/local/include
+#FFLAGS = -O2 -fconvert=big-endian -I/opt/local/include
 AR = ar
 ARFLAGS = -cru
-TARGET = libenomo.a
+TARGET = lib${NAME}.a
 SRC = \
 air_module.f90 \
 alf_module.f90 \
@@ -51,12 +54,12 @@ ${TARGET} : ${OBJ}
 
 install :
 	install -m 644 ${TARGET} ${PREFIX}/lib/
-	install -d ${PREFIX}/include/enomo
-	install -m 644 ${MOD} ${PREFIX}/include/enomo
+	install -d ${PREFIX}/include/${NAME}
+	install -m 644 ${MOD} ${PREFIX}/include/${NAME}
 
 uninstall :
 	rm -f ${PREFIX}/lib/${TARGET}
-	rm -f ${PREFIX}/include/enomo/*.mod
+	rm -f ${PREFIX}/include/${NAME}/*.mod
 
 test : test.o ${TARGET}
 	${FC}  $< ./${TARGET} -o test
