@@ -41,9 +41,40 @@ module xreal_module
     module procedure xdiv
   end interface
 
+  interface operator(**)
+    module procedure xpowi
+  end interface
+
+  interface operator(==)
+    module procedure xeq
+  end interface
+
+  interface operator(/=)
+    module procedure xne
+  end interface
+
+  interface operator(>)
+    module procedure xgt
+  end interface
+
+  interface operator(>=)
+    module procedure xge
+  end interface
+
+  interface operator(<)
+    module procedure xlt
+  end interface
+
+  interface operator(<=)
+    module procedure xle
+  end interface
+
   public :: xreal_type, xreal_norm, xreal_fxpgy, xreal_base10, xreal_test, &
-    assignment(=), operator(+), operator(-), operator(*), operator(/)
-  private :: x_assign_f, f_assign_x ,xmul, xdiv, xadd, xsub
+    assignment(=), operator(+), operator(-), operator(*), operator(/), &
+    operator(**), operator(==), operator(/=), operator(>), operator(>=), &
+    operator(<), operator(<=)
+  private :: x_assign_f, f_assign_x ,xmul, xdiv, xadd, xsub, &
+    xpowi, xeq, xne, xgt, xge, xlt, xle
 
 contains
 
@@ -126,6 +157,33 @@ contains
 
   end function xdiv
 
+  function xpowi(x,n) result(z)
+    type(xreal_type), intent(in) :: x
+    integer(kind=i4b), intent(in) :: n
+    
+    integer(kind=i4b) :: i
+    type(xreal_type) :: z, xx
+
+    z = xreal_norm(x)
+    xx = z
+    select case(n)
+      case(0)
+        z = 0.0_dp
+      case(1:)
+        do i=1, n-1
+          z = z * xx
+          z = xreal_norm(z)
+        end do
+      case(:-1)
+        z = 1.0_dp
+        do i=1, abs(n)
+          z = z / xx
+          z = xreal_norm(z)
+        end do
+    end select
+
+  end function xpowi
+
   function xreal_fxpgy(f,x,g,y) result(z)
     real(kind=dp), intent(in) :: f, g
     type(xreal_type), intent(in) :: x, y
@@ -171,6 +229,100 @@ contains
 
   end function xsub
 
+  function xeq(x,y) result(l)
+    type(xreal_type), intent(in) :: x, y
+    logical :: l 
+    type(xreal_type) :: xx, yy
+    
+    xx = xreal_norm(x)
+    yy = xreal_norm(y)
+    l = (xx%p == yy%p) .and. (xx%i == yy%i)
+    
+  end function xeq
+
+  function xne(x,y) result(l)
+    type(xreal_type), intent(in) :: x, y
+    logical :: l 
+    type(xreal_type) :: xx, yy
+    
+    xx = xreal_norm(x)
+    yy = xreal_norm(y)
+    l = (xx%p /= yy%p) .or. (xx%i /= yy%i)
+    
+  end function xne
+
+  function xgt(x,y) result(l)
+    type(xreal_type), intent(in) :: x, y
+    logical :: l 
+    type(xreal_type) :: xx, yy
+    
+    xx = xreal_norm(x)
+    yy = xreal_norm(y)
+    if (xx%i==yy%i) then
+      l = (xx%p > yy%p)
+    else
+      l = xx%i > yy %i
+    end if
+    if (xx%p*yy%p<0) then
+      l = .not. l
+    end if
+    
+  end function xgt
+
+  function xge(x,y) result(l)
+    type(xreal_type), intent(in) :: x, y
+    logical :: l 
+    type(xreal_type) :: xx, yy
+    
+    xx = xreal_norm(x)
+    yy = xreal_norm(y)
+    if (xx%i==yy%i) then
+      l = (xx%p >= yy%p)
+    else
+      l = xx%i >= yy %i
+    end if
+    if (xx%p*yy%p<0) then
+      l = .not. l
+    end if
+    
+  end function xge
+
+  function xlt(x,y) result(l)
+    type(xreal_type), intent(in) :: x, y
+    logical :: l 
+    type(xreal_type) :: xx, yy
+    
+    xx = xreal_norm(x)
+    yy = xreal_norm(y)
+    if (xx%i==yy%i) then
+      l = (xx%p < yy%p)
+    else
+      l = xx%i < yy %i
+    end if
+    if (xx%p*yy%p<0) then
+      l = .not. l
+    end if
+    
+  end function xlt
+
+  function xle(x,y) result(l)
+    type(xreal_type), intent(in) :: x, y
+    logical :: l 
+    type(xreal_type) :: xx, yy
+    
+    xx = xreal_norm(x)
+    yy = xreal_norm(y)
+    if (xx%i==yy%i) then
+      l = (xx%p <= yy%p)
+    else
+      l = xx%i <= yy %i
+    end if
+    if (xx%p*yy%p<0) then
+      l = .not. l
+    end if
+    
+  end function xle
+
   function xreal_base10(x) result(y)
     type(xreal_type), intent(in) :: x
     type(xreal_type) :: y
@@ -212,6 +364,19 @@ contains
     print *, "x/y=", z, xreal_base10(z)
     z = xreal_fxpgy(f,x,g,y)  
     print *, "fx+gy=", z, xreal_base10(z)
+    z = x * x * x * x * x
+    print *, "x*x*x*x*x=", z, xreal_base10(z)
+    z = x**5
+    print *, "x**5=", z, xreal_base10(z)
+    z = x**(-2)
+    print *, "x**-2=", z, xreal_base10(z)
+    print *, "x**3==y:", (x**3)==y
+    print *, "x**3/=y:", (x**3)/=y
+    print *, "x**3>y:", (x**3)>y
+    print *, "x**3>=y:", (x**3)>=y
+    print *, "x**3>=x**3:", (x**3)>=(x**3)
+    print *, "x**3<y:", (x**3)<y
+    print *, "x**3<=x**3:", (x**3)<=(x**3)
 
   end subroutine xreal_test
 
