@@ -302,7 +302,7 @@ contains
 
   subroutine alfx_test(ntrunc,nlat,un)
     use math_module, only: rad2deg=>math_rad2deg
-    use xreal_module, only: xreal_type, xreal_base10, assignment(=)
+    use xreal_module, only: xreal_type, assignment(=)
     use glatwgt_module, only: glatwgt_calc
 
     integer(kind=i4b), intent(in) :: ntrunc, nlat
