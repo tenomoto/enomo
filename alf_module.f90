@@ -13,9 +13,12 @@ module alf_module
 ! NB:
 !  normalised to 1 by default. factor (-1)**m is not included.
 
+
   real(kind=dp), public, dimension(:,:), allocatable :: alf_anm, alf_bnm
   real(kind=dp), public, dimension(:), allocatable :: alf_cm, alf_dm
   
+  real(kind=dp), private, parameter :: dbl_min = 2.0_dp**(-1022)
+
   integer(kind=i4b), private :: alf_ntrunc = 0
   real(kind=dp), private :: pstart
   integer, private :: retain = 0
@@ -121,7 +124,11 @@ contains
     nmax = size(ps)-1
     do m=1, nmax
       ps(m) = (d(m)*u)*ps(m-1)
+      if (abs(ps(m))<dbl_min) then
+        exit
+      end if
     end do
+    ps(m:) = 0.0_dp
 
   end subroutine alf_calcps
 
