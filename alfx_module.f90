@@ -111,6 +111,8 @@ contains
     mmax =  size(alf,1) - 1
     if (present(p00)) then
       pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
     end if
     jmax = size(lat)
     if (jmax<1) then
