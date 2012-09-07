@@ -8,7 +8,7 @@ module grmsm_module
       label = (/"ncep    ","rsm     ","mpi     ","version "/)
     real(kind=sp) :: fhour = 0.0
     integer(kind=i4b), dimension(4) :: idate
-    integer(kind=i4b) :: un, nx, ny, nz, nt=3, levmax=100
+    integer(kind=i4b) :: nx, ny, nz, nt=3, levmax=100
     real(kind=sp), dimension(:), allocatable :: si, sl, ext
     real(kind=sp), dimension(:,:), allocatable :: &
       gz, q,           & ! surface geopotential and ln(p)
@@ -28,14 +28,13 @@ module grmsm_module
 
 contains
 
-  function grmsm_file_init(un,nx,ny,nz,nt,lnh,lext) result(f)
-    integer(kind=i4b) :: un, nx, ny, nz
+  function grmsm_file_init(nx,ny,nz,nt,lnh,lext) result(f)
+    integer(kind=i4b) :: nx, ny, nz
     integer(kind=i4b), optional :: nt
     logical, optional :: lnh, lext
 
     type(grmsm_file_type) :: f
 
-    f % un = un
     f % nx = nx
     f % ny = ny
     f % nz = nz
@@ -101,7 +100,6 @@ contains
     integer(kind=i4b), intent(in) :: un
     type(grmsm_file_type), intent(inout) :: f
 
-    integer(kind=i4b) :: n, extn
     real(kind=sp), dimension(2*f % levmax-(f % nz+1)-f % nz) :: dummy
 
     integer(kind=i4b) :: k
@@ -111,40 +109,39 @@ contains
       stop
     end if
 
-    n = f % un
-    rewind(n)
-    read(n) f % label
+    rewind(un)
+    read(un) f % label
     if (f % lext) then
-      read(n) f % fhour,f % idate,f % si, f % sl
+      read(un) f % fhour,f % idate,f % si, f % sl
     else
-      read(n) f % fhour,f % idate,f % si, f % sl, &
+      read(un) f % fhour,f % idate,f % si, f % sl, &
         dummy, f % ext
     end if
-    read(n) f % gz
-    read(n) f % q
+    read(un) f % gz
+    read(un) f % q
     do k=1, f % nz
-      read(n) f % te(:,:,k)
+      read(un) f % te(:,:,k)
     end do
     do k=1, f % nz
-      read(n) f % uu(:,:,k)
-      read(n) f % vv(:,:,k)
+      read(un) f % uu(:,:,k)
+      read(un) f % vv(:,:,k)
     end do
     if (f % lnh) then
       do k=1, f % nz
-        read(n) f % pn(:,:,k)
+        read(un) f % pn(:,:,k)
       end do
       do k=1, f % nz
-        read(n) f % tn(:,:,k)
+        read(un) f % tn(:,:,k)
       end do
       do k=1, f % nz
-        read(n) f % wn(:,:,k)
+        read(un) f % wn(:,:,k)
       end do
     end if
-    read(n) f % fm2
-    read(n) f % fm2x
-    read(n) f % fm2y
-    read(n) f % flat
-    read(n) f % flon
+    read(un) f % fm2
+    read(un) f % fm2x
+    read(un) f % fm2y
+    read(un) f % flat
+    read(un) f % flon
 
   end subroutine grmsm_read
 
@@ -187,7 +184,6 @@ contains
     integer(kind=i4b), intent(in) :: un
     type(grmsm_file_type), intent(inout) :: f
 
-    integer(kind=i4b) :: n, extn
     real(kind=sp), dimension(2*f % levmax-(f % nz+1)-f % nz) :: dummy
     logical :: le
 
@@ -200,41 +196,40 @@ contains
       stop
     end if
 
-    n = f % un
-    rewind(n)
-    read(n) f % label
+    rewind(un)
+    read(un) f % label
     if (f % lext) then
-      write(n) f % fhour,f % idate,f % si, f % sl
+      write(un) f % fhour,f % idate,f % si, f % sl
     else
       dummy(:) = 0.0
-      write(n) f % fhour,f % idate,f % si, f % sl, &
+      write(un) f % fhour,f % idate,f % si, f % sl, &
         dummy, f % ext
     end if
-    write(n) f % gz
-    write(n) f % q
+    write(un) f % gz
+    write(un) f % q
     do k=1, f % nz
-      write(n) f % te(:,:,k)
+      write(un) f % te(:,:,k)
     end do
     do k=1, f % nz
-      write(n) f % uu(:,:,k)
-      write(n) f % vv(:,:,k)
+      write(un) f % uu(:,:,k)
+      write(un) f % vv(:,:,k)
     end do
     if (f % lnh) then
       do k=1, f % nz
-        write(n) f % pn(:,:,k)
+        write(un) f % pn(:,:,k)
       end do
       do k=1, f % nz
-        write(n) f % tn(:,:,k)
+        write(un) f % tn(:,:,k)
       end do
       do k=1, f % nz
-        write(n) f % wn(:,:,k)
+        write(un) f % wn(:,:,k)
       end do
     end if
-    write(n) f % fm2
-    write(n) f % fm2x
-    write(n) f % fm2y
-    write(n) f % flat
-    write(n) f % flon
+    write(un) f % fm2
+    write(un) f % fm2x
+    write(un) f % fm2y
+    write(un) f % flat
+    write(un) f % flon
 
   end subroutine grmsm_write
 
