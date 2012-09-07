@@ -49,7 +49,7 @@ contains
     end if
 
     allocate( &
-      f % si(nz+1),f % sl(nz), f % ext(512-(6+2*f % levmax)), &
+      f % si(nz+1),f % sl(nz), &
       f % gz(nx,ny),f % q(nx,ny), &
       f % fm2(nx,ny),f % fm2x(nx,ny),f % fm2y(nx,ny), &
       f % flat(nx,ny),f % flon(nx,ny), &
@@ -58,6 +58,10 @@ contains
     if (f % lnh) then
       allocate(f % pn(nx,ny,nz),f % tn(nx,ny,nz),f % wn(nx,ny,nz))
     end if
+    if (f % lext) then
+      allocate(f % ext(512-(6+2*f % levmax)))
+    end if
+
     f % isinit = .true.
 
   end function grmsm_file_init
