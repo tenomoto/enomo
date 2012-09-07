@@ -60,6 +60,7 @@ contains
     end if
     if (f % lext) then
       allocate(f % ext(512-(6+2*f % levmax)))
+      f % ext(:) = 0.0
     end if
 
     f % isinit = .true.
@@ -156,13 +157,21 @@ contains
 
     real(kind=sp) :: iwav1, jwav1, igrd1, jgrd1
 
+    if (.not.f % isinit) then
+      print *, "call grmsm_file_init first"
+      stop
+    end if
+    if (.not.f % lext) then
+      print *, "file is not initialized for ext"
+      stop
+    end if
+
     igrd1 = f % nx + 1
     jgrd1 = f % ny + 1
     iwav1 = (f % nx-12)/3*2
     jwav1 = iwav1*f % ny/(f % nx*2)*2 + 1
     iwav1 = iwav1 + 1
 
-    f % ext(:) = 0.0
     f % ext(1) = iwav1
     f % ext(2) = jwav1
     f % ext(3) = igrd1
