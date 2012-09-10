@@ -72,10 +72,13 @@ contains
 
     deallocate( &
       f % si,f % sl,f % gz,f % q, &
-      f % fm2,f % fm2x,f % fm2y,f % flat,f % flat, &
+      f % fm2,f % fm2x,f % fm2y,f % flat,f % flon, &
       f % te,f % uu,f % vv,f % rq )
     if (f % lnh) then
       deallocate(f % tn,f % pn,f % wn)
+    end if
+    if (f % lext) then
+      deallocate(f % ext)
     end if
     
     f % isinit = .false.
@@ -210,7 +213,7 @@ contains
     end if
 
     rewind(un)
-    read(un) f % label
+    write(un) f % label
     if (f % lext) then
       write(un) f % fhour,f % idate,f % si, f % sl
     else
