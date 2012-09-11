@@ -120,10 +120,10 @@ contains
     rewind(un)
     read(un) f % label
     if (f % lext) then
-      read(un) f % fhour,f % idate,f % si, f % sl
-    else
       read(un) f % fhour,f % idate,f % si, f % sl, &
         dummy, f % ext
+    else
+      read(un) f % fhour,f % idate,f % si, f % sl
     end if
     read(un) f % gz
     read(un) f % q
@@ -215,11 +215,11 @@ contains
     rewind(un)
     write(un) f % label
     if (f % lext) then
-      write(un) f % fhour,f % idate,f % si, f % sl
-    else
       dummy(:) = 0.0
       write(un) f % fhour,f % idate,f % si, f % sl, &
         dummy, f % ext
+    else
+      write(un) f % fhour,f % idate,f % si, f % sl
     end if
     write(un) f % gz
     write(un) f % q
