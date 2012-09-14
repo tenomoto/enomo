@@ -19,7 +19,8 @@ earth_module.f90 \
 fft_module.f90 \
 glatwgt_module.f90 \
 grads_module.f90 \
-grmsm_module.f90 \
+grmsm_sig_module.f90 \
+grmsm_sfc_module.f90 \
 integer_module.f90 \
 interpolate_module.f90 \
 kind_module.f90 \
@@ -82,7 +83,8 @@ earth_module.o : kind_module.o math_module.o
 fft_module.o : kind_module.o
 glatwgt_module.o : kind_module.o math_module.o
 grads_module.o : kind_module.o string_module.o
-grmsm_module.o : kind_module.o sigma_module.o
+grmsm_sig_module.o : kind_module.o sigma_module.o
+grmsm_sfc_module.o : kind_module.o
 integer_module.o : kind_module.o
 interpolate_module.o : kind_module.o math_module.o
 io_module.o : kind_module.o
@@ -108,4 +110,4 @@ vectrans_module.o : kind_module.o shtrans_module.o
 vectransf_module.o : kind_module.o
 #vis5d_module.o : kind_module.o time_module.o calendar_module.o
 water_module.o : kind_module.o air_module.o
-#xreal_module.o : kind_module.o
+xreal_module.o : kind_module.o

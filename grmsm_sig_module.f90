@@ -1,9 +1,9 @@
-module grmsm_module
+module grmsm_sig_module
   use kind_module, only: i4b, sp, dp
   implicit none
   private
 
-  type grmsm_file_type
+  type grmsm_sig_type
     character(len=8), dimension(4) :: &
       label = (/"ncep    ","rsm     ","mpi     ","version "/)
     real(kind=sp) :: fhour = 0.0
@@ -23,17 +23,17 @@ module grmsm_module
       lext = .false.
   end type
 
-  public :: grmsm_file_type, grmsm_file_init, grmsm_file_clean, grmsm_set_sigma, &
-    grmsm_read, grmsm_set_ext, grmsm_write
+  public :: grmsm_sig_type, grmsm_sig_init, grmsm_sig_clean, grmsm_sig_set_sigma, &
+    grmsm_sig_read, grmsm_sig_set_ext, grmsm_sig_write
 
 contains
 
-  function grmsm_file_init(nx,ny,nz,nt,lnh,lext) result(f)
+  function grmsm_sig_init(nx,ny,nz,nt,lnh,lext) result(f)
     integer(kind=i4b) :: nx, ny, nz
     integer(kind=i4b), optional :: nt
     logical, optional :: lnh, lext
 
-    type(grmsm_file_type) :: f
+    type(grmsm_sig_type) :: f
 
     f % nx = nx
     f % ny = ny
@@ -65,10 +65,10 @@ contains
 
     f % isinit = .true.
 
-  end function grmsm_file_init
+  end function grmsm_sig_init
 
-  subroutine grmsm_file_clean(f)
-    type(grmsm_file_type), intent(inout) :: f
+  subroutine grmsm_sig_clean(f)
+    type(grmsm_sig_type), intent(inout) :: f
 
     deallocate( &
       f % si,f % sl,f % gz,f % q, &
@@ -83,37 +83,37 @@ contains
     
     f % isinit = .false.
 
-  end subroutine grmsm_file_clean
+  end subroutine grmsm_sig_clean
 
-  subroutine grmsm_set_sigma(dsi,f)
+  subroutine grmsm_sig_set_sigma(dsi,f)
     use sigma_module, only: sigma_half2full
 
     real(kind=dp), dimension(:), intent(in) :: dsi
-    type(grmsm_file_type), intent(inout) :: f
+    type(grmsm_sig_type), intent(inout) :: f
 
     real(kind=dp), dimension(size(dsi)-1) :: dsl
 
     call sigma_half2full(dsi,dsl)
 
     if (.not.f % isinit) then
-      print *, "call grmsm_file_init first"
+      print *, "call grmsm_sig_init first"
       stop
     end if
     f % si(:) = real(dsi(:), kind=sp)
     f % sl(:) = real(dsl(:), kind=sp)
 
-  end subroutine grmsm_set_sigma
+  end subroutine grmsm_sig_set_sigma
 
-  subroutine grmsm_read(un,f)
+  subroutine grmsm_sig_read(un,f)
     integer(kind=i4b), intent(in) :: un
-    type(grmsm_file_type), intent(inout) :: f
+    type(grmsm_sig_type), intent(inout) :: f
 
     real(kind=sp), dimension(2*f % levmax-(f % nz+1)-f % nz) :: dummy
 
     integer(kind=i4b) :: k
 
     if (.not.f % isinit) then
-      print *, "call grmsm_file_init first"
+      print *, "call grmsm_sig_init first"
       stop
     end if
 
@@ -151,17 +151,17 @@ contains
     read(un) f % flat
     read(un) f % flon
 
-  end subroutine grmsm_read
+  end subroutine grmsm_sig_read
 
-  subroutine grmsm_set_ext( &
+  subroutine grmsm_sig_set_ext( &
     rproj,rtruth,rorient,rcenlat,rcenlon,rlftgrd,rbtmgrd,rdelx,rdely,f)
     real(kind=sp) rproj,rtruth,rorient,rcenlat,rcenlon,rlftgrd,rbtmgrd,rdelx,rdely
-    type(grmsm_file_type), intent(inout) :: f
+    type(grmsm_sig_type), intent(inout) :: f
 
     real(kind=sp) :: iwav1, jwav1, igrd1, jgrd1
 
     if (.not.f % isinit) then
-      print *, "call grmsm_file_init first"
+      print *, "call grmsm_sig_init first"
       stop
     end if
     if (.not.f % lext) then
@@ -194,11 +194,11 @@ contains
       f % ext(16) = 1.0
     end if
 
-  end subroutine grmsm_set_ext
+  end subroutine grmsm_sig_set_ext
 
-  subroutine grmsm_write(un,f)
+  subroutine grmsm_sig_write(un,f)
     integer(kind=i4b), intent(in) :: un
-    type(grmsm_file_type), intent(inout) :: f
+    type(grmsm_sig_type), intent(inout) :: f
 
     real(kind=sp), dimension(2*f % levmax-(f % nz+1)-f % nz) :: dummy
     logical :: le
@@ -208,7 +208,7 @@ contains
       rtruth, rcenlat, rcenlon, rlftgrd, rbtmgrd, rdelx, rdely
 
     if (.not.f % isinit) then
-      print *, "call grmsm_file_init first"
+      print *, "call grmsm_sig_init first"
       stop
     end if
 
@@ -247,6 +247,6 @@ contains
     write(un) f % flat
     write(un) f % flon
 
-  end subroutine grmsm_write
+  end subroutine grmsm_sig_write
 
-end module grmsm_module
+end module grmsm_sig_module
