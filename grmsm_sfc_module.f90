@@ -62,7 +62,8 @@ contains
       f % alnsf(nx,ny),  f % alnwf(nx,ny),  f % slmsk(nx,ny), &
       f % vfrac(nx,ny),  f % canopy(nx,ny), f % f10m(nx,ny),  &
       f % vtype(nx,ny),  f % stype(nx,ny),  f % facsf(nx,ny), &
-      f % facwf(nx,ny),  f % uustar(nx,ny), f % ffmm(nx,ny) )
+      f % facwf(nx,ny),  f % uustar(nx,ny), f % ffmm(nx,ny),  &
+      f % ffhh(nx,ny) )
 
     allocate(f % smc(nx,ny,f % lsoil),f % stc(nx,ny,f% lsoil))
 
@@ -80,7 +81,8 @@ contains
       f % alnsf,  f % alnwf,  f % slmsk, &
       f % vfrac,  f % canopy, f % f10m, &
       f % vtype,  f % stype,  f % facsf, &
-      f % facwf,  f % uustar, f % ffmm )
+      f % facwf,  f % uustar, f % ffmm, &
+      f % ffhh )
 
     deallocate(f % smc,f % stc)
 
