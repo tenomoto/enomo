@@ -56,7 +56,7 @@ contains
       f % te(nx,ny,nz),f % uu(nx,ny,nz),f % vv(nx,ny,nz), &
       f % rq(nx,ny,nz,f % nt) )
     if (f % lnh) then
-      allocate(f % pn(nx,ny,nz),f % tn(nx,ny,nz),f % wn(nx,ny,nz))
+      allocate(f % pn(nx,ny,nz),f % tn(nx,ny,nz),f % wn(nx,ny,nz+1))
     end if
     if (f % lext) then
       allocate(f % ext(512-(6+2*f % levmax)))
@@ -110,7 +110,7 @@ contains
 
     real(kind=sp), dimension(2*f % levmax-(f % nz+1)-f % nz) :: dummy
 
-    integer(kind=i4b) :: k
+    integer(kind=i4b) :: k, l
 
     if (.not.f % isinit) then
       print *, "call grmsm_sig_init first"
@@ -134,6 +134,11 @@ contains
       read(un) f % uu(:,:,k)
       read(un) f % vv(:,:,k)
     end do
+    do l=1, f % nt
+      do k=1, f % nz 
+        read(un) f % rq(:,:,k,l)
+      end do
+    end do
     if (f % lnh) then
       do k=1, f % nz
         read(un) f % pn(:,:,k)
@@ -141,7 +146,7 @@ contains
       do k=1, f % nz
         read(un) f % tn(:,:,k)
       end do
-      do k=1, f % nz
+      do k=1, f % nz+1
         read(un) f % wn(:,:,k)
       end do
     end if
@@ -203,7 +208,7 @@ contains
     real(kind=sp), dimension(2*f % levmax-(f % nz+1)-f % nz) :: dummy
     logical :: le
 
-    integer(kind=i4b) :: k
+    integer(kind=i4b) :: k, l
     real(kind=sp) :: iwav1, jwav1, igrd1, jgrd1, &
       rtruth, rcenlat, rcenlon, rlftgrd, rbtmgrd, rdelx, rdely
 
@@ -230,6 +235,11 @@ contains
       write(un) f % uu(:,:,k)
       write(un) f % vv(:,:,k)
     end do
+    do l=1, f % nt
+      do k=1, f % nz 
+        write(un) f % rq(:,:,k,l)
+      end do
+    end do
     if (f % lnh) then
       do k=1, f % nz
         write(un) f % pn(:,:,k)
@@ -237,7 +247,7 @@ contains
       do k=1, f % nz
         write(un) f % tn(:,:,k)
       end do
-      do k=1, f % nz
+      do k=1, f % nz+1
         write(un) f % wn(:,:,k)
       end do
     end if
