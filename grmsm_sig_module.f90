@@ -108,7 +108,7 @@ contains
     integer(kind=i4b), intent(in) :: un
     type(grmsm_sig_type), intent(inout) :: f
 
-    real(kind=sp), dimension(2*f % levmax-(f % nz+1)-f % nz) :: dummy
+    real(kind=sp), dimension(2*f % levmax+1-(f % nz+1)-f % nz) :: dummy
 
     integer(kind=i4b) :: k, l
 
