@@ -157,30 +157,44 @@ contains
 
   end function xdiv
 
-  function xpowi(x,n) result(z)
+  function fxr(f,x) result(z)
+    real(kind=dp), intent(in) :: f
     type(xreal_type), intent(in) :: x
-    integer(kind=i4b), intent(in) :: n
-    
-    integer(kind=i4b) :: i
-    type(xreal_type) :: z, xx
+    type(xreal_type) :: z
 
     z = xreal_norm(x)
-    xx = z
-    select case(n)
-      case(0)
-        z = 0.0_dp
-      case(1:)
-        do i=1, n-1
-          z = z * xx
-          z = xreal_norm(z)
-        end do
-      case(:-1)
-        z = 1.0_dp
-        do i=1, abs(n)
-          z = z / xx
-          z = xreal_norm(z)
-        end do
-    end select
+    z%p = f / z%p
+    z%i = z%i
+    z = xreal_norm(z)
+
+  end function fxr
+
+  function xpowi(x,n) result(y)
+    type(xreal_type), intent(in) :: x
+    integer(kind=i4b), intent(in) :: n
+
+    integer :: m
+    type(xreal_type) :: y, z
+
+    y = 1.0_dp;
+    z = xreal_norm(x)
+    m = n
+    if (n < 0) then
+      z = fxr(1.0_dp, z)
+      m = -n
+    else
+    end if
+    do
+      if (iand(m, 1)==1) then
+        y = y * z
+      end if
+      m = ishft(m, -1)
+      z = z * z
+      if (m <= 0) then
+        exit
+      end if
+    end do
+    y = xreal_norm(y)
 
   end function xpowi
 
