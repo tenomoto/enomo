@@ -23,7 +23,7 @@ module alf_module
   real(kind=dp), private :: pstart
   integer, private :: retain = 0
 
-  public :: alf_init, alf_clean, alf_calc, &
+  public :: alf_init, alf_clean, alf_calc, alf_calc_m, &
     alf_calcps, alf_calcpn, alf_checksum, alf_test, alf_test_checksum
 
 contains
@@ -112,6 +112,46 @@ contains
     end do
 
   end subroutine alf_calc
+
+  subroutine alf_calc_m(m,lat,alfm,p00)
+    integer(kind=i4b), intent(in) :: m
+    real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,:), intent(out) :: alfm
+    real(kind=dp), intent(in), optional :: p00
+
+    integer(kind=i4b) :: j, n, jmax, jmaxh, mmax
+
+    real(kind=dp), dimension(0:size(alfm,1)-1) :: pmm, pnm
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
+
+    mmax =  size(alfm,1) - 1
+    if (present(p00)) then
+      pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
+    end if
+    jmax = size(lat)
+    if (jmax<1) then
+      return
+    end if
+
+    alfm(:,:) = 0.0_dp
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
+    pmm(0) = pstart
+    do j=1, min(jmax,size(alfm,2))
+      call alf_calcps(coslat(j),alf_dm,pmm)
+      if (m/=mmax) then
+        pnm(m) = pmm(m)
+        alfm(m,j) = pmm(m)
+        call alf_calcpn(sinlat(j),m,alf_anm(:,m),alf_bnm(:,m),alf_cm(m),pnm)
+        alfm(m+1:mmax,j) = pnm(m+1:mmax)
+      else 
+        alfm(mmax,j) = pmm(mmax)
+      end if
+    end do
+
+  end subroutine alf_calc_m
 
   subroutine alf_calcps(u,d,ps)
 

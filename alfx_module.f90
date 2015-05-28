@@ -26,8 +26,8 @@ module alfx_module
     module procedure alfmp, alfmx
   end interface
 
-  public :: alfx_init, alfx_clean, alfx_calc, alfx_calc_inline, &
-    alfx_calcps, alfx_calcpn, alfx_test, alfx_test_checksum
+  public :: alfx_init, alfx_clean, alfx_calc, alfx_calc_m, alfx_calc_inline, &
+    alfx_calc_inline_m, alfx_calcps, alfx_calcpn, alfx_test, alfx_test_checksum
   private :: alfsp, alfmp, alfsx, alfmx
 
 contains
@@ -93,6 +93,51 @@ contains
     end do
 
   end subroutine alfx_calc
+
+  subroutine alfx_calc_m(m,lat,alfm,p00)
+    use xreal_module, only: xreal_type, assignment(=)
+    use alf_module, only: &
+      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
+    integer(kind=i4b), intent(in) :: m
+    real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,:), intent(out) :: alfm
+    real(kind=dp), intent(in), optional :: p00
+
+    integer(kind=i4b) :: j, n, jmax, mmax
+
+    type(xreal_type), dimension(0:size(alfm,1)-1) :: pmm, pnm
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
+
+    mmax =  size(alfm,1) - 1
+    if (present(p00)) then
+      pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
+    end if
+    jmax = size(lat)
+    if (jmax<1) then
+      return
+    end if
+
+    alfm(:,:) = 0.0_dp
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
+    pmm(0) = pstart
+    do j=1, min(jmax,size(alfm,2))
+      call alfx_calcps(coslat(j),dm,pmm)
+      if (m/=mmax) then
+        pnm(m) = pmm(m)
+        alfm(m,j) = pmm(m)
+        call alfx_calcpn(sinlat(j),m,anm(:,m),bnm(:,m),cm(m),pnm)
+        do n=m+1, mmax
+          alfm(n,j) = pnm(n)
+        end do
+      else
+        alfm(mmax,j) = pmm(mmax)
+      end if
+    end do
+
+  end subroutine alfx_calc_m
 
   subroutine alfx_calc_inline(lat,alf,p00)
     use xreal_module, only: big=>xreal_big, bigi=>xreal_bigi
@@ -160,6 +205,75 @@ contains
    end do
 
   end subroutine alfx_calc_inline
+
+  subroutine alfx_calc_inline_m(m,lat,alfm,p00)
+    use xreal_module, only: big=>xreal_big, bigi=>xreal_bigi
+    use alf_module, only: &
+      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
+    integer(kind=i4b), intent(in) :: m
+    real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,:), intent(out) :: alfm
+    real(kind=dp), intent(in), optional :: p00
+
+    integer(kind=i4b) :: j, n, jmax, jmaxh, mmax
+
+    real(kind=dp), dimension(0:size(alfm,1)-1) :: pmm, pnm
+    integer(kind=i4b), dimension(0:size(alfm,1)-1) :: ipmm, ipnm
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
+
+    mmax =  size(alfm,1) - 1
+    if (present(p00)) then
+      pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
+    end if
+    jmax = size(lat)
+    if (jmax<1) then
+      return
+    end if
+
+    alfm(:,:) = 0.0_dp
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
+    pmm(0)  = pstart
+    ipmm(0) = 0
+    do j=1, min(jmax,size(alfm,2))
+      call alfx_calcps(coslat(j),dm,pmm,ipmm)
+      if (m/=mmax) then
+        pnm(m)  = pmm(m)
+        ipnm(m) = ipmm(m)
+        select case (ipmm(m))
+          case(0)
+            alfm(m,j) = pmm(m)
+          case(:-1)
+            alfm(m,j) = pmm(m)*bigi
+          case(1:)
+            alfm(m,j) = pmm(m)*big
+        end select
+        call alfx_calcpn(sinlat(j),m,anm(:,m),bnm(:,m),cm(m),pnm,ipnm)
+        do n=m+1, mmax
+          select case (ipnm(n))
+            case(0)
+              alfm(n,j) = pnm(n)
+            case(:-1)
+              alfm(n,j) = pnm(n)*bigi
+            case(1:)
+              alfm(n,j) = pnm(n)*big
+          end select
+        end do
+      else
+        select case (ipmm(mmax))
+          case(0)
+            alfm(mmax,j) = pmm(mmax)
+          case(:-1)
+            alfm(mmax,j) = pmm(mmax)*bigi
+          case(1:)
+            alfm(mmax,j) = pmm(mmax)*big
+        end select
+     end if
+   end do
+
+  end subroutine alfx_calc_inline_m
 
   subroutine alfsp(u,d,ps)
     use xreal_module, only: xreal_type, assignment(=), operator(*)

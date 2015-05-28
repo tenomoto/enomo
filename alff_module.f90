@@ -19,7 +19,7 @@ module alff_module
   integer(kind=i4b), private :: mmax, jmax, jmaxh
   real(kind=dp), private :: pstart
 
-  public :: alff_init, alff_clean, alff_calc, &
+  public :: alff_init, alff_clean, alff_calc, alff_calc_m, &
     alff_calcp0, alff_calcp1, alff_calcpn, alff_test, alff_test_checksum
   private :: fouriercoeff
 
@@ -141,6 +141,99 @@ contains
     end do! j
 
   end subroutine alff_calc
+
+  subroutine alff_calc_m(mout,lat,alfm,p00)
+    use math_module, only: pih=>math_pih
+    use integer_module, only: swap=>integer_swap
+    use alf_module, only: cm=>alf_cm, dm=>alf_dm, alf_calcps
+
+    integer(kind=i4b), intent(in) :: mout 
+    real(kind=dp), dimension(:), intent(in) :: lat
+    real(kind=dp), dimension(0:,:), intent(out) :: alfm
+    real(kind=dp), intent(in), optional :: p00
+
+    integer(kind=i4b) :: j, m, n, k1, k2
+    real(kind=dp) :: theta
+    real(kind=dp), dimension(size(lat)) :: sinlat, coslat
+    real(kind=dp), dimension(0:mmax) :: pmm
+    real(kind=dp), dimension(0:mmax,2) :: pn
+    
+    if (present(p00)) then
+      pstart = p00
+    else
+      pstart = sqrt(0.5_dp)
+    end if
+    call fouriercoeff(pstart)
+    jmax = size(lat)
+    alfm(:,:) = 0.0_dp
+    alfm(0,:) = pstart
+    sinlat(:) = sin(lat(:))
+    coslat(:) = cos(lat(:))
+    pmm(:) = 0.0_dp
+    pn(:,:) = 0.0_dp
+
+    if (mout/2*2==mout) then ! even
+
+! calculate Pnm
+      do j=1, min(jmax,size(alfm,2))
+
+        theta = pih-lat(j) ! lat => colat
+
+! Pmm and Pm,n=m+1
+        pmm(0) = pstart
+        call alf_calcps(coslat(j),dm,pmm)
+  
+        pn(0,1) = pmm(0) ! m = 0
+        pn(1,1) = cm(0)*sinlat(j)*pmm(0)
+        call alff_calcp0(theta,pn(:,1))
+        if (mout==0) then
+          alfm(0:mmax,j) = pn(0:mmax,1)
+        else if (mout==mmax-1) then
+          alfm(mmax-1,j) = pmm(mmax-1)
+          alfm(mmax,j) = cm(mmax-1)*sinlat(j)*pmm(mmax-1)
+        else
+          k1 = 1
+          k2 = 2
+          do m=2, mout, 2 ! m even
+            pn(m,k2) = pmm(m)
+            pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
+            call alff_calcpn(m,pn(:,k1),pn(:,k2))
+            alfm(m:mmax,j) = pn(m:mmax,k2)
+            call swap(k1,k2)
+          end do
+        end if
+      end do! j
+
+    else ! odd
+
+      do j=1, jmax
+
+        theta = pih-lat(j) ! lat => colat
+
+        pn(1,1) = pmm(1) ! m = 1
+        pn(2,1) = cm(1)*sinlat(j)*pmm(1)
+        call alff_calcp1(theta,pn(:,1))
+        if (m==1) then
+          alfm (1:mmax,j) = pn(1:mmax,1)
+        else if (mout==mmax) then
+          alfm(mmax,j) = pmm(mmax)
+        else
+          k1 = 1
+          k2 = 2
+          do m=3, mout, 2 ! m odd
+            pn(m,k2) = pmm(m)
+            pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
+            call alff_calcpn(m,pn(:,k1),pn(:,k2))
+            alfm(m:mmax,j) = pn(m:mmax,k2)
+            call swap(k1,k2)
+          end do
+        end if
+
+      end do! j
+
+    end if ! even or odd
+
+  end subroutine alff_calc_m
 
   subroutine fouriercoeff(p0)
 

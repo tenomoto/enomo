@@ -1,7 +1,7 @@
 PREFIX = ${HOME}/local
 FC = g95
 #FC = gfortran-mp-4.5
-NAME = enomo_g95
+NAME = enomo
 FFLAGS = -O2 -fendian=big -I/opt/local/include
 #FFLAGS = -O2 -fconvert=big-endian -I/opt/local/include
 AR = ar
