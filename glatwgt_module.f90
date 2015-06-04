@@ -17,8 +17,9 @@ module glatwgt_module
   use kind_module, only : dp, i4b
   private
 
-!  xacc_min  double minimum accuracy available
-  real(kind=dp), private, parameter :: xacc_min = 1.0e-15_dp
+!  epsa: absolute tolerance
+!  epsr: relative tolerance
+  real(kind=dp), private, parameter :: epsa = 1.0e-70_dp, epsr = 1.0e-15_dp
   integer(kind=i4b), private :: jMid
   real(kind=dp), private, dimension(:), allocatable :: an
   logical, public :: glatwgt_verbose = .false.
@@ -153,12 +154,17 @@ contains
 
     real(kind=dp), intent(in) :: theta
     real(kind=dp), intent(out) :: pn
+
+    real(kind=dp) :: c = 0.0_dp, y, t
     integer(kind=i4b) :: k, l
 
-    pn = 0.0
+    pn = 0.0_dp
     do l=0, jMid
       k=l*2 ! k = l*2 + 1 if n odd
-      pn = pn + an(l) * cos(k*theta)
+      y = an(l) * cos(k*theta) - c
+      t = pn + y
+      c = (t - pn) - y
+      pn = t
     end do
     
   end subroutine legendre_P
@@ -168,12 +174,17 @@ contains
 
     real(kind=dp), intent(in) :: theta
     real(kind=dp), intent(out) :: dpn
+
+    real(kind=dp) :: c = 0.0_dp, y, t
     integer(kind=i4b) :: k, l
 
-    dpn = 0.0
+    dpn = 0.0_dp
     do l=1, jMid
       k=l*2 ! k = l*2 + 1 if n odd
-      dpn = dpn - k * an(l) * sin(k*theta)
+      y =  -k * an(l) * sin(k*theta) - c
+      t = dpn + y
+      c = (t - dpn) - y
+      dpn = t
     end do
     
   end subroutine legendre_dP
@@ -184,7 +195,7 @@ contains
 
   end subroutine legendre_clean
 
-  subroutine newton(f, df, x0, x, tolerance)
+  subroutine newton(f, df, x0, x, absolute_tolerance, relative_tolerance)
     implicit none
 
   ! finds the root u
@@ -203,23 +214,29 @@ contains
     end interface
     real(kind=dp), intent(in) :: x0
     real(kind=dp), intent(out) :: x
-    real(kind=dp), optional, intent(in) :: tolerance
+    real(kind=dp), optional, intent(in) :: absolute_tolerance, relative_tolerance
 
     integer(kind=i4b), parameter :: newton_max = 500
-    real(kind=dp) :: xacc = xacc_min
+    real(kind=dp) :: ea = epsa, er = epsr
 
-    real(kind=dp) :: y, dy
+    real(kind=dp) :: y, dy, xx
     integer(kind=i4b) :: i
 
-    if (present(tolerance)) then
-      if (tolerance < xacc_min) then
-        print *, "### Error in newton: tolerance too small"
+    if (present(absolute_tolerance)) then
+      if (absolute_tolerance < epsa) then
+        print *, "### Error in newton: absolute tolerance too small"
         stop
       else
-        xacc = tolerance
+        ea = absolute_tolerance
       end if
-    else
-      xacc = xacc_min
+    end if
+    if (present(relative_tolerance)) then
+      if (relative_tolerance < epsr) then
+        print *, "### Error in newton: relative tolerance too small"
+        stop
+      else
+        er = relative_tolerance
+      end if
     end if
 
     x = x0
@@ -227,10 +244,11 @@ contains
       call f(x, y)
       call df(x, dy)
       y = y/dy
-      if (abs(y) < xacc) then
+      xx = x
+      x = x - y
+      if (abs(x-xx)/(ea+er*(abs(x)+abs(xx)))<1) then
         return
       end if
-      x = x - y
     end do
     print *, "### Error in newton : Too many refinement."
     
