@@ -338,7 +338,7 @@ contains
     print *, "ntrunc=", ntrunc, " nlat=", nlat
     allocate(lat(nlat),wgt(nlat))
     allocate(alf(0:ntrunc,0:ntrunc,nlat/2))
-    call glatwgt_calc(lat,wgt,nlat)
+    call glatwgt_calc(lat,wgt)
     call alff_init(ntrunc)
     call cpu_time(t1)
     call alff_calc(lat(1:nlat/2),alf)
@@ -378,7 +378,7 @@ contains
     call alff_init(ntrunc)
     jmaxh = nlat/2
     allocate(lat(nlat),sinlat(jmaxh),coslat(jmaxh),wgt(nlat))
-    call glatwgt_calc(lat,wgt,nlat)
+    call glatwgt_calc(lat,wgt)
     sinlat(:) = sin(lat(1:jmaxh))
     coslat(:) = cos(lat(1:jmaxh))
     allocate(pmm(0:ntrunc),pn(0:ntrunc), &

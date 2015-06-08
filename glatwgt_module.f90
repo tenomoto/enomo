@@ -2,13 +2,13 @@ module glatwgt_module
 
 ! calculates Gaussian points and weights.
 
-! Source: Based on Swartztrauber (2003)
+! Source: Based on Swartztrauber (2002)
 ! Author: T. Enomoto
 ! Usage:
 !   Calculate Gaussian points and weights
-!     subroutine f_scgaus(x, w, jMax)
-!       x(jMax)  Gaussian latitudes
-!       w(jMax)  Gaussian weights
+!     subroutine f_scgaus(x, w, nlat)
+!       x(nlat)  Gaussian latitudes
+!       w(nlat)  Gaussian weights
 ! History:
 !   TE 27 Apr 2003  Fixed a bug in setting SH colatitudes
 !   TE 28 Apr 2003  Ported for AFES
@@ -17,21 +17,19 @@ module glatwgt_module
   use kind_module, only : dp, i4b
   private
 
-!  epsa: absolute tolerance
-!  epsr: relative tolerance
-  real(kind=dp), private, parameter :: epsa = 1.0e-70_dp, epsr = 1.0e-15_dp
-  integer(kind=i4b), private :: jMid
-  real(kind=dp), private, dimension(:), allocatable :: an
+  real(kind=dp), private :: xacc
+  integer(kind=i4b), private :: nlat, nlath, nlat2
+  real(kind=dp), private, dimension(:), allocatable :: an, dan
   logical, public :: glatwgt_verbose = .false.
 
-  private :: legendre_init, legendre_P, legendre_dp, legendre_clean, newton
+  private :: legendre_init, legendre_calc, legendre_clean, newton
   public :: glatwgt_calc, glatwgt_approx, glatwgt_test
 
 contains
 
 ! Public procedures
 
-  subroutine glatwgt_calc(x,w,ny)
+  subroutine glatwgt_calc(x, w, lcolat)
     use math_module, only: pi=>math_pi, pih=>math_pih, rad2deg=>math_rad2deg
     implicit none
   
@@ -39,40 +37,40 @@ contains
 ! NB. Gaussian colatitudes are used during calculation
 
     real(kind=dp), dimension(:), intent(out) :: x, w
-    integer(kind=i4b), intent(in), optional :: ny
+    logical, optional :: lcolat
 
-    integer(kind=i4b) :: l, j, jj=1, jMax
-    real(kind=dp) :: guess, pn, dpn, pn_max=0.0_dp, s
+    integer(kind=i4b) :: j, jj=1
+    real(kind=dp) :: x0, pn, dpn, pn_max=0.0_dp, s
 
-    if (present(ny)) then
-      jMax = ny
-    else
-      jMax = min(size(x),size(w))
-    end if
-    jMid = jMax/2
+    nlat = min(size(x),size(w))
+    nlath = nlat / 2
+    nlat = nlath + nlath
+    nlat2 = nlat + nlat
 
     call legendre_init()
 
-    guess = pih - pih/(jMax + 1)
-    call newton(legendre_P, legendre_dP, guess, x(jMid))
-    guess = 3.0_dp*x(jMid) - pi
-    call newton(legendre_P, legendre_dP, guess, x(jMid-1))
-    do l = jMid-2, 1, -1
-      guess = 2*x(l+1) - x(l+2) 
-      call newton(legendre_P, legendre_dP, guess, x(l))
+    x0 = pih - pih/(nlat + 1)
+    call newton(x0, x(nlath), w(nlath))
+    x0 = 3.0_dp*x(nlath) - pi
+    call newton(x0, x(nlath-1), w(nlath-1))
+    do j = nlath-2, 1, -1
+      x0 = x(j+1) + x(j+1) - x(j+2) 
+      call newton(x0, x(j), w(j))
     end do
-    do j = 1, jMid
-      call legendre_dP(x(j), dpn)
-      w(j) = (2.0_dp*jMax + 1.0_dp)/(dpn)**2
-    end do
-    w(jMax:jMid+1:-1) = w(1:jMid)
+    w(nlat:nlath+1:-1) = w(1:nlath)
+    s = sum(w(:))
+    w(:) = 2.0_dp*w(:) / s
 
-    x(1:jMid) = pih-x(1:jMid)
-    x(jMid+1:jMax) = -x(jMid:1:-1)
+    if (present(lcolat) .and. lcolat) then
+      x(nlath+1:nlat) = pi - x(nlath:1:-1)
+    else
+      x(1:nlath) = pih-x(1:nlath)
+      x(nlath+1:nlat) = -x(nlath:1:-1)
+    end if
 
     if (glatwgt_verbose) then
-      do j=1, jMid
-        call legendre_P(pih-x(j), pn)
+      do j=1, nlath
+        call legendre_calc(pih-x(j), pn, dpn)
 !        print *, j, x(j)*rad2deg, pn, w(j)
         pn = abs(pn)
         if (pn>pn_max) then
@@ -81,7 +79,7 @@ contains
         end if
       end do
       print *, "Largest error:", pn_max, " at", jj
-      s = sum(w(1:jMid))
+      s = sum(w(1:nlath))
       print *, "sum of weights:", s, " error=", abs(1.0_dp - s)
     end if
 
@@ -115,7 +113,7 @@ contains
     allocate(lat(nlat),wgt(nlat))
     print *, "# ----- glatwgt_test() -----"
     glatwgt_verbose = .true.
-    call glatwgt_calc(lat,wgt,nlat)
+    call glatwgt_calc(lat, wgt)
     if (present(un)) then
       write(unit=un,fmt=*) lat
       write(unit=un,fmt=*) wgt
@@ -128,125 +126,89 @@ contains
 ! private procedures
 
   subroutine legendre_init()
+    use machine_module, only : machine_eps
     implicit none
 
-    real(kind=dp), parameter :: a0sq = 1.5_dp
-    integer(kind=i4b) :: k, l, n
+    integer(kind=i4b) :: j
+    real(kind=dp) :: t1, t2, b1, b2 
 
-    n = jMid*2
-    allocate(an(0:jMid))
-    an(jMid) = a0sq
-    do k=2, n
-      an(jMid) = (1.0_dp-1.0_dp/(4.0_dp*k*k))*an(jMid)
-    end do
-    an(jMid) = sqrt(an(jMid))
+! set tolerance
+    xacc = sqrt(machine_eps())
+    xacc = xacc * sqrt(xacc) 
 
-    do k=1, jMid
-      l = 2*k
-      an(jMid-k) = (l-1.0_dp)*(2.0_dp*n-l+2.0_dp)/(l*(2.0_dp*n-l+1.0_dp)) * an(jMid-k+1) 
+    allocate(an(0:nlath), dan(1:nlath))
+
+! Fourier coefficient without scaling factor
+! coefficients within [ ] of (8) of Swarztrauber 2002
+    an(nlath) = 1.0_dp
+    t1 = -1.0_dp
+    t2 = nlat + 1.0_dp
+    b1 =  0.0_dp
+    b2 =  (nlat + nlat) + 1.0_dp
+    do j = nlath, 1, -1
+      t1 = t1 + 2.0_dp
+      t2 = t2 - 1.0_dp
+      b1 = b1 + 1.0_dp
+      b2 = b2 - 2.0_dp
+      an(j - 1) = (t1 * t2) / (b1 * b2) * an(j)
     end do
-    an(0) = 0.5_dp*an(0)
+    do j = 1, nlath
+      dan(j) = (j + j) * an(j)
+    end do
 
   end subroutine legendre_init
 
-  subroutine legendre_P(theta, pn)
+  subroutine legendre_calc(theta, pn, dpn)
     implicit none
 
     real(kind=dp), intent(in) :: theta
-    real(kind=dp), intent(out) :: pn
+    real(kind=dp), intent(out) :: pn, dpn
 
-    real(kind=dp) :: c = 0.0_dp, y, t
     integer(kind=i4b) :: k, l
+    real(kind=dp) :: c0, s0, c, s, c1
 
-    pn = 0.0_dp
-    do l=0, jMid
-      k=l*2 ! k = l*2 + 1 if n odd
-      y = an(l) * cos(k*theta) - c
-      t = pn + y
-      c = (t - pn) - y
-      pn = t
-    end do
-    
-  end subroutine legendre_P
-
-  subroutine legendre_dP(theta, dpn)
-    implicit none
-
-    real(kind=dp), intent(in) :: theta
-    real(kind=dp), intent(out) :: dpn
-
-    real(kind=dp) :: c = 0.0_dp, y, t
-    integer(kind=i4b) :: k, l
-
+    c0 = cos(theta + theta)
+    s0 = sin(theta + theta)
+    c = c0
+    s = s0
+    pn = 0.5_dp * an(0)
     dpn = 0.0_dp
-    do l=1, jMid
-      k=l*2 ! k = l*2 + 1 if n odd
-      y =  -k * an(l) * sin(k*theta) - c
-      t = dpn + y
-      c = (t - dpn) - y
-      dpn = t
+    do l=1, nlath
+      pn = pn + an(l) * c
+      dpn = dpn - dan(l) * s
+      c1 = c0 * c - s0 * s
+      s  = s0 * c + c0 * s
+      c  = c1
     end do
     
-  end subroutine legendre_dP
+  end subroutine legendre_calc
 
   subroutine legendre_clean()
 
-    deallocate(an)
+    deallocate(an, dan)
 
   end subroutine legendre_clean
 
-  subroutine newton(f, df, x0, x, absolute_tolerance, relative_tolerance)
+  subroutine newton(x0, x, w)
     implicit none
 
   ! finds the root u
 
-    interface
-      subroutine f(x, f_result)
-        use kind_module, only: dp, i4b
-        real(kind=dp), intent(in) :: x
-        real(kind=dp), intent(out) :: f_result
-      end subroutine f
-      subroutine df(x, f_result)
-        use kind_module, only: dp, i4b
-        real(kind=dp), intent(in) :: x
-        real(kind=dp), intent(out) :: f_result
-      end subroutine df
-    end interface
     real(kind=dp), intent(in) :: x0
-    real(kind=dp), intent(out) :: x
-    real(kind=dp), optional, intent(in) :: absolute_tolerance, relative_tolerance
+    real(kind=dp), intent(out) :: x, w
 
     integer(kind=i4b), parameter :: newton_max = 500
-    real(kind=dp) :: ea = epsa, er = epsr
 
     real(kind=dp) :: y, dy, xx
     integer(kind=i4b) :: i
 
-    if (present(absolute_tolerance)) then
-      if (absolute_tolerance < epsa) then
-        print *, "### Error in newton: absolute tolerance too small"
-        stop
-      else
-        ea = absolute_tolerance
-      end if
-    end if
-    if (present(relative_tolerance)) then
-      if (relative_tolerance < epsr) then
-        print *, "### Error in newton: relative tolerance too small"
-        stop
-      else
-        er = relative_tolerance
-      end if
-    end if
-
     x = x0
     do i = 1, newton_max
-      call f(x, y)
-      call df(x, dy)
-      y = y/dy
       xx = x
-      x = x - y
-      if (abs(x-xx)/(ea+er*(abs(x)+abs(xx)))<1) then
+      call legendre_calc(x, y, dy)
+      x = x - y/dy
+      if (abs(x - xx) <= xacc * abs(xx)) then
+        w = (nlat2 + 1.0_dp)/(dy + y * cos(xx)/sin(xx))**2
         return
       end if
     end do
