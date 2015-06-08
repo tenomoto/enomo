@@ -83,7 +83,7 @@ calendar_module.o : kind_module.o string_module.o
 confmap_module.o : kind_module.o math_module.o sphere_module.o
 earth_module.o : kind_module.o math_module.o
 fft_module.o : kind_module.o
-glatwgt_module.o : kind_module.o math_module.o
+glatwgt_module.o : kind_module.o math_module.o machine_module.o
 grads_module.o : kind_module.o string_module.o
 grmsm_sig_module.o : kind_module.o sigma_module.o
 grmsm_sfc_module.o : kind_module.o
