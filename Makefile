@@ -45,7 +45,9 @@ upstream_module.f90 \
 vectrans_module.f90 \
 vectransf_module.f90 \
 water_module.f90 \
-xreal_module.f90
+xreal_module.f90 \
+machine_module.f90 \
+sum_module.f90
 #monotonecubic_module.f90 \
 #vis5d_module.f90
 OBJ = ${SRC:%.f90=%.o}
@@ -111,3 +113,5 @@ vectransf_module.o : kind_module.o
 #vis5d_module.o : kind_module.o time_module.o calendar_module.o
 water_module.o : kind_module.o air_module.o
 xreal_module.o : kind_module.o
+machine_module.o : kind_module.o
+sum_module.o : kind_module.o
