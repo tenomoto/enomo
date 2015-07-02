@@ -66,7 +66,6 @@ contains
   subroutine alff_calc(lat,alf,p00)
     use math_module, only: pih=>math_pih
     use integer_module, only: swap=>integer_swap
-    use alf_module, only: cm=>alf_cm, dm=>alf_dm, alf_calcps
 
     real(kind=dp), dimension(:), intent(in) :: lat
     real(kind=dp), dimension(0:,0:,:), intent(out) :: alf
@@ -75,7 +74,6 @@ contains
     integer(kind=i4b) :: j, m, n, k1, k2
     real(kind=dp) :: theta
     real(kind=dp), dimension(size(lat)) :: sinlat, coslat
-    real(kind=dp), dimension(0:mmax) :: pmm
     real(kind=dp), dimension(0:mmax,2) :: pn
     
     if (present(p00)) then
@@ -86,56 +84,38 @@ contains
     call fouriercoeff(pstart)
     jmax = size(lat)
     alf(:,:,:) = 0.0_dp
-    alf(0,0,:) = pstart
     sinlat(:) = sin(lat(:))
     coslat(:) = cos(lat(:))
-    pmm(:) = 0.0_dp
-    pn(:,:) = 0.0_dp
 
 ! calculate Pnm
     do j=1, min(jmax,size(alf,3))
 
       theta = pih-lat(j) ! lat => colat
 
-! Pmm and Pm,n=m+1
-      pmm(0) = pstart
-      call alf_calcps(coslat(j),dm,pmm)
-
-      pn(0,1) = pmm(0) ! m = 0
-      pn(1,1) = cm(0)*sinlat(j)*pmm(0)
+      pn(:,:) = 0.0_dp
+      pn(0,1) = pstart ! m = 0
+      pn(1,1) = sqrt(3.0_dp)*sinlat(j)*pn(0,1)
       call alff_calcp0(theta,pn(:,1))
       alf(0:mmax,0,j) = pn(0:mmax,1)
       k1 = 1
       k2 = 2
-      do m=2, mmax-2, 2 ! m even
-        pn(m,k2) = pmm(m)
-        pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
+      do m=2, mmax, 2 ! m even
         call alff_calcpn(m,pn(:,k1),pn(:,k2))
         alf(m:mmax,m,j) = pn(m:mmax,k2)
         call swap(k1,k2)
       end do
-    end do! j
 
-    do j=1, jmax
-
-      theta = pih-lat(j) ! lat => colat
-
-      pn(1,1) = pmm(1) ! m = 1
-      pn(2,1) = cm(1)*sinlat(j)*pmm(1)
+      pn(:,:) = 0.0_dp
+      pn(1,1) = sqrt(1.5_dp)*coslat(j)*pstart ! m = 1
+      pn(2,1) = sqrt(5.0_dp)*sinlat(j)*pn(1,1)
       call alff_calcp1(theta,pn(:,1))
       alf(1:mmax,1,j) = pn(1:mmax,1)
       k1 = 1
       k2 = 2
-      do m=3, mmax-2, 2 ! m odd
-        pn(m,k2) = pmm(m)
-        pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
+      do m=3, mmax, 2 ! m odd
         call alff_calcpn(m,pn(:,k1),pn(:,k2))
         alf(m:mmax,m,j) = pn(m:mmax,k2)
         call swap(k1,k2)
-      end do
-      alf(mmax,mmax-1,j) = cm(mmax-1)*sinlat(j)*pmm(mmax-1)
-      do m=mmax-1, mmax
-        alf(m,m,j) = pmm(m)
       end do
 
     end do! j
@@ -145,7 +125,6 @@ contains
   subroutine alff_calc_m(mout,lat,alfm,p00)
     use math_module, only: pih=>math_pih
     use integer_module, only: swap=>integer_swap
-    use alf_module, only: cm=>alf_cm, dm=>alf_dm, alf_calcps
 
     integer(kind=i4b), intent(in) :: mout 
     real(kind=dp), dimension(:), intent(in) :: lat
@@ -166,37 +145,26 @@ contains
     call fouriercoeff(pstart)
     jmax = size(lat)
     alfm(:,:) = 0.0_dp
-    alfm(0,:) = pstart
     sinlat(:) = sin(lat(:))
     coslat(:) = cos(lat(:))
-    pmm(:) = 0.0_dp
-    pn(:,:) = 0.0_dp
 
-    if (mout/2*2==mout) then ! even
+    if (modulo(mout,2) == 0) then ! even
 
 ! calculate Pnm
       do j=1, min(jmax,size(alfm,2))
 
         theta = pih-lat(j) ! lat => colat
 
-! Pmm and Pm,n=m+1
-        pmm(0) = pstart
-        call alf_calcps(coslat(j),dm,pmm)
-  
-        pn(0,1) = pmm(0) ! m = 0
-        pn(1,1) = cm(0)*sinlat(j)*pmm(0)
+        pn(:,:) = 0.0_dp
+        pn(0,1) = pstart ! m = 0
+        pn(1,1) = sqrt(3.0_dp)*sinlat(j)*pn(0,1)
         call alff_calcp0(theta,pn(:,1))
         if (mout==0) then
           alfm(0:mmax,j) = pn(0:mmax,1)
-        else if (mout==mmax-1) then
-          alfm(mmax-1,j) = pmm(mmax-1)
-          alfm(mmax,j) = cm(mmax-1)*sinlat(j)*pmm(mmax-1)
         else
           k1 = 1
           k2 = 2
           do m=2, mout, 2 ! m even
-            pn(m,k2) = pmm(m)
-            pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
             call alff_calcpn(m,pn(:,k1),pn(:,k2))
             alfm(m:mmax,j) = pn(m:mmax,k2)
             call swap(k1,k2)
@@ -210,19 +178,16 @@ contains
 
         theta = pih-lat(j) ! lat => colat
 
-        pn(1,1) = pmm(1) ! m = 1
-        pn(2,1) = cm(1)*sinlat(j)*pmm(1)
+        pn(:,:) = 0.0_dp
+        pn(1,1) = sqrt(1.5_dp)*coslat(j)*pstart ! m = 1
+        pn(2,1) = sqrt(5.0_dp)*sinlat(j)*pn(1,1)
         call alff_calcp1(theta,pn(:,1))
         if (m==1) then
           alfm (1:mmax,j) = pn(1:mmax,1)
-        else if (mout==mmax) then
-          alfm(mmax,j) = pmm(mmax)
         else
           k1 = 1
           k2 = 2
           do m=3, mout, 2 ! m odd
-            pn(m,k2) = pmm(m)
-            pn(m+1,k2) = cm(m)*sinlat(j)*pmm(m)  
             call alff_calcpn(m,pn(:,k1),pn(:,k2))
             alfm(m:mmax,j) = pn(m:mmax,k2)
             call swap(k1,k2)
@@ -237,24 +202,25 @@ contains
 
   subroutine fouriercoeff(p0)
 
-    real(kind=dp), intent(in), optional :: p0
+    real(kind=dp), intent(in) :: p0
 
-    integer(kind=i4b) :: n, l, k, n2
+    integer(kind=i4b) :: n, k, n2, nh, l1
 
 ! calculate fourier coefficients for Pn
     ank(2,1) = 0.75_dp*sqrt(5.0_dp) * p0
     do n=3, mmax
-      ank(n,n/2) = &
-        sqrt(1.0_dp-1.0_dp/(4.0_dp*n*n)) * ank(n-1,(n-1)/2)
+      n2 = n * 2
+      ank(n,n/2) = ank(n-1,(n-1)/2) * &
+        sqrt((n2 - 1.0_dp) * (n2 + 1.0_dp)) / n2
     end do
     do n=2, mmax
-      n2  = n/2
-      do k=1, n2
-        l = 2*k
-        ank(n,n2-k) = (l-1.0_dp)*(2.0_dp*n-l+2.0_dp)/&
-          (l*(2.0_dp*n-l+1.0_dp)) * ank(n,n2-k+1)
+      nh  = n/2
+      do k=1, nh
+        l1 = 2 * k - 1
+        ank(n,nh-k) = ank(n,nh-k+1) * &
+          l1 * (n - k + 1.0_dp) / (k * (2.0_dp*n - l1))
       end do
-      if (n==n2*2) then
+      if (n==nh*2) then
         ank(n,0) = 0.5_dp*ank(n,0)
       end if
     end do
@@ -265,18 +231,30 @@ contains
     real(kind=dp), intent(in) :: theta
     real(kind=dp), dimension(0:), intent(inout) :: p0
 
-    integer(kind=i4b) :: n, l, k, n2, nmod, nmax
+    integer(kind=i4b) :: n, l, nmax
+    real(kind=dp) :: c1, s1, c2, s2, c, s, ct
 
-      nmax = size(p0)-1
-      do n=2, nmax
-        n2 = n/2
-        nmod = n - n2*2
-        p0(n) = 0.0_dp
-        do l=0, n2
-          k = 2*l + nmod ! n even: k=2*l, n odd: k=2*l+1
-          p0(n) = p0(n) + ank(n,l)*cos(k*theta)
-        end do
+    nmax = size(p0)-1
+    c1 = cos(theta)
+    s1 = sin(theta)
+    c2 = c1*c1 - s1*s1
+    s2 = 2.0_dp * c1 * s1
+    do n=2, nmax
+      p0(n) = 0.0_dp
+      if (mod(n,2) == 0) then
+        c = 1.0_dp
+        s = 0.0_dp
+      else
+        c = c1
+        s = s1
+      end if
+      do l=0, n/2 
+        p0(n) = p0(n) + ank(n,l) * c
+        ct = c2 * c - s2 * s
+        s  = s2 * c + c2 * s
+        c = ct
       end do
+    end do
 
   end subroutine alff_calcp0
 
@@ -284,20 +262,34 @@ contains
     real(kind=dp), intent(in) :: theta
     real(kind=dp), dimension(0:), intent(inout) :: p1
 
-    integer(kind=i4b) :: n, l, k, n2, nmod, nmax
-    real(kind=dp) :: sqrtnnr
+    integer(kind=i4b) :: n, l, k, nmod, nmax
+    real(kind=dp) :: sqrtnnr, c1, s1, c2, s2, c, s, ct
 
-      nmax = size(p1)-1
-      do n=3, nmax
-        n2 = n/2
-        nmod = n - n2*2
-        p1(n) = 0.0_dp
-        sqrtnnr = 1.0_dp/sqrt(n*(n+1.0_dp))
-        do l=0, n2
-          k = 2*l + nmod ! n even: k=2*l, n odd: k=2*l+1
-          p1(n) = p1(n) + ank(n,l)*k*sqrtnnr*sin(k*theta)
-        end do
+    nmax = size(p1)-1
+    c1 = cos(theta)
+    s1 = sin(theta)
+    c2 = c1*c1 - s1*s1
+    s2 = 2.0_dp * c1 * s1
+    do n=3, nmax
+      p1(n) = 0.0_dp
+      sqrtnnr = 1.0_dp/sqrt(n*(n+1.0_dp))
+      if (mod(n,2) == 0) then
+        c = 1.0_dp
+        s = 0.0_dp
+        nmod = 0
+      else
+        c = c1
+        s = s1
+        nmod = 1
+      end if
+      do l=0, n/2
+        k = 2*l + nmod ! n even: k=2*l, n odd: k=2*l+1
+        p1(n) = p1(n) + ank(n,l) * (2*l+nmod) * sqrtnnr * s
+        ct = c2 * c - s2 * s
+        s  = s2 * c + c2 * s
+        c = ct
       end do
+    end do
 
   end subroutine alff_calcp1
 
@@ -312,8 +304,8 @@ contains
       return
     end if
     nmax = size(pn1) - 1
-!    do n=m, nmax
-    do n=m+2, nmax
+    do n=m, nmax
+!    do n=m+2, nmax
       pn1(n) = enm(n,m)*pn0(n-2) + fnm(n,m)*pn1(n-2) - gnm(n,m)*pn0(n)
     end do
 
@@ -430,8 +422,8 @@ contains
     k2 = 2
     do m=2, mmax-2, 2 ! m even
       do j=1, jmaxh
-        pjn(j,m,k2) = pjm(j,m)
-        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)
+!        pjn(j,m,k2) = pjm(j,m)
+!        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)
         call alff_calcpn(m,pjn(j,:,k1),pjn(j,:,k2))
       end do
       do n=m, ntrunc
@@ -476,8 +468,8 @@ contains
     k2 = 2
     do m=3, mmax-2, 2
       do j=1, jmaxh
-        pjn(j,m,k2) = pjm(j,m)
-        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)  
+!        pjn(j,m,k2) = pjm(j,m)
+!        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)  
         call alff_calcpn(m,pjn(j,:,k1),pjn(j,:,k2))
       end do
       do n=m, ntrunc

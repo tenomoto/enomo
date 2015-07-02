@@ -1,29 +1,30 @@
 program test
   use kind_module, only: i4b
-  use sum_module, only: sum_test
+!  use sum_module, only: sum_test
 !  use xreal_module, only: xreal_test
 !  use glatwgt_module, only: glatwgt_test
 !  use alf_module, only: alf_test, alf_test_checksum
 !  use alfx_module, only: alfx_test, alfx_test_checksum
-!  use alff_module, only: alff_test, alff_test_checksum
+  use alff_module, only: alff_test, alff_test_checksum
   implicit none
 
 !  integer(kind=i4b), parameter :: un=91
-!  integer(kind=i4b) :: ntrunc, nlat
+  integer(kind=i4b) :: ntrunc, nlat
 !  character(len=8) :: ntruncstr, nlatstr
 !  character(len=256) :: fname
   
-  call sum_test(1000000)
+!  call sum_test(1000000)
 !  call xreal_test()
 
-!  nlat = 10239
+!  nlat = 720 
+!  call glatwgt_test(nlat)
 !  fname="glatwgt_J"//trim(adjustl(nlatstr))//".txt"
 !  open(unit=un,file=trim(adjustl(fname)), status="replace", action="write")
 !  call glatwgt_test(nlat,un)
 !  close(unit=un)
 
-!  ntrunc = 239
-!  nlat = 360
+  ntrunc = 39
+  nlat = 60
 !  write(unit=ntruncstr,fmt=*) ntrunc
 !  write(unit=nlatstr,fmt=*) nlat
 
@@ -64,5 +65,7 @@ program test
 !  fname="alff_checksum_T"//trim(adjustl(ntruncstr))//"J"//trim(adjustl(nlatstr))//".txt"
 !  open(unit=un,file=trim(adjustl(fname)), status="replace", action="write")
 !  call alff_test_checksum(ntrunc,nlat,un)
+  call alff_test_checksum(ntrunc,nlat)
+!  call alff_test_s(ntrunc,nlat)
 !  close(unit=un)
 end program test
