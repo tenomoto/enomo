@@ -314,8 +314,6 @@ contains
   subroutine alff_test(ntrunc,nlat,un)
     use math_module, only: rad2deg=>math_rad2deg
     use glatwgt_module, only: glatwgt_calc
-    use alf_module, only: &
-      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
 
     integer(kind=i4b), intent(in) :: ntrunc, nlat
     integer(kind=i4b), intent(in), optional :: un
@@ -348,8 +346,7 @@ contains
     use math_module, only: pih=>math_pih
     use integer_module, only: swap=>integer_swap
     use glatwgt_module, only: glatwgt_calc
-    use alf_module, only: alf_checksum, alf_calcps, &
-      anm=>alf_anm, bnm=>alf_bnm, cm=>alf_cm, dm=>alf_dm
+    use alf_module, only: alf_checksum
 
     implicit none
 
@@ -359,7 +356,7 @@ contains
     real(kind=dp) :: xx, dd, x, dx, p00, theta
     integer(kind=i4b) :: jmaxh, m, n, j, mm, nn, k1, k2
     real(kind=dp), dimension(:), allocatable :: &
-      lat, sinlat, coslat, wgt, pmm, pn
+      lat, sinlat, coslat, wgt, pn
     real(kind=dp), dimension(:,:), allocatable ::  pjm
     real(kind=dp), dimension(:,:,:), allocatable ::  pjn
 
@@ -373,9 +370,7 @@ contains
     call glatwgt_calc(lat,wgt)
     sinlat(:) = sin(lat(1:jmaxh))
     coslat(:) = cos(lat(1:jmaxh))
-    allocate(pmm(0:ntrunc),pn(0:ntrunc), &
-      pjm(jmaxh,0:ntrunc),pjn(jmaxh,0:ntrunc,2))
-    pmm(:) = 0.0_dp
+    allocate(pn(0:ntrunc), pjm(jmaxh,0:ntrunc),pjn(jmaxh,0:ntrunc,2))
     pn(:) = 0.0_dp
 
     xx = 1.0_dp
@@ -389,18 +384,11 @@ contains
     pjn(:,:,:) = 0.0_dp
     pjn(:,0,:) = p00
 
-    do j=1, jmaxh
-      pmm(0) = p00
-      call alf_calcps(coslat(j),dm,pmm)
-      pjm(j,:) = pmm(:)
-    end do
-    deallocate(pmm)
-
 ! m = 0
     do j=1, jmaxh
       theta = pih-lat(j) ! lat => colat
-      pn(0) = pjm(j,0) ! m = 0
-      pn(1) = cm(0)*sinlat(j)*pjm(j,0)
+      pn(0) = p00 ! m = 0
+      pn(1) = sqrt(3.0_dp)*sinlat(j)*p00
       call alff_calcp0(theta,pn)
       pjn(j,0:mmax,1) = pn(:)
     end do
@@ -422,8 +410,6 @@ contains
     k2 = 2
     do m=2, mmax-2, 2 ! m even
       do j=1, jmaxh
-!        pjn(j,m,k2) = pjm(j,m)
-!        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)
         call alff_calcpn(m,pjn(j,:,k1),pjn(j,:,k2))
       end do
       do n=m, ntrunc
@@ -445,8 +431,8 @@ contains
 ! m = 1
     do j=1, jmaxh
       theta = pih-lat(j) ! lat => colat
-      pn(1) = pjm(j,1) ! m = 1
-      pn(2) = cm(1)*sinlat(j)*pjm(j,1)
+      pn(1) = sqrt(1.5_dp)*coslat(j)*p00 ! m = 1
+      pn(2) = sqrt(5.0_dp)*sinlat(j)*pn(1)
       call alff_calcp1(theta,pn(:))
       pjn(j,1:mmax,1) = pn(1:mmax)
     end do
@@ -468,8 +454,6 @@ contains
     k2 = 2
     do m=3, mmax-2, 2
       do j=1, jmaxh
-!        pjn(j,m,k2) = pjm(j,m)
-!        pjn(j,m+1,k2) = cm(m)*sinlat(j)*pjm(j,m)  
         call alff_calcpn(m,pjn(j,:,k1),pjn(j,:,k2))
       end do
       do n=m, ntrunc
