@@ -21,7 +21,7 @@ module alff_module
 
   public :: alff_init, alff_clean, alff_calc, alff_calc_m, &
     alff_calcp0, alff_calcp1, alff_calcpn, alff_test, alff_test_checksum
-  private :: fouriercoeff
+  private :: fouriercoeff, gamma_poly
 
 contains
 
@@ -201,17 +201,28 @@ contains
   end subroutine alff_calc_m
 
   subroutine fouriercoeff(p0)
-
+    use math_module, only:  pir => math_pir
     real(kind=dp), intent(in) :: p0
 
+    integer(kind=i4b), parameter :: nc = 128
+
     integer(kind=i4b) :: n, k, n2, nh, l1
+    real(kind=dp) :: y
 
 ! calculate fourier coefficients for Pn
     ank(2,1) = 0.75_dp*sqrt(5.0_dp) * p0
-    do n=3, mmax
-      n2 = n * 2
-      ank(n,n/2) = ank(n-1,(n-1)/2) * &
-        sqrt((n2 - 1.0_dp) * (n2 + 1.0_dp)) / n2
+!    do n=3, mmax
+    do n=3, min(nc, mmax)
+!      n2 = n * 2
+!      ank(n,n/2) = ank(n-1,(n-1)/2) * &
+!        sqrt((n2 - 1.0_dp) * (n2 + 1.0_dp)) / n2
+        ank(n,n/2) = ank(n-1,(n-1)/2) * &
+          sqrt(1.0_dp - 0.25_dp/(n*n))
+    end do
+    do n=nc+1, mmax
+      y = 1.0_dp / n
+      ank(n, n/2) = sqrt(2.0_dp * (2.0_dp * n + 1.0_dp) * pir * y) * &
+        gamma_poly(0.5_dp * y) / gamma_poly(y) ** 2
     end do
     do n=2, mmax
       nh  = n/2
@@ -226,6 +237,25 @@ contains
     end do
 
   end subroutine fouriercoeff
+
+  function gamma_poly(y) result (g)
+    real(kind=dp), intent(in) :: y
+    real(kind=dp) :: g
+
+    integer(kind=i4b), parameter :: n = 7
+    real(kind=dp), dimension(n), parameter :: &
+      c = (/1.0_dp/12.0_dp, 1.0_dp/288.0_dp, -139.0_dp/51840.0_dp, -571.0_dp/2488320.0_dp, &
+            163879.0_dp/209018880.0_dp, 5246819.0_dp/75246796800.0_dp, -534703531.0_dp/902961561600.0_dp/)
+    integer(kind=i4b) :: i
+
+    g = 0.0_dp
+
+    do i=n, 1, -1
+      g = (g + c(i)) * y
+    end do
+    g = g + 1.0_dp
+
+  end function gamma_poly
 
   subroutine alff_calcp0(theta,p0)
     real(kind=dp), intent(in) :: theta
