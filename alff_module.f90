@@ -261,30 +261,18 @@ contains
     real(kind=dp), intent(in) :: theta
     real(kind=dp), dimension(0:), intent(inout) :: p0
 
-    integer(kind=i4b) :: n, l, nmax
-    real(kind=dp) :: c1, s1, c2, s2, c, s, ct
+    integer(kind=i4b) :: n, l, k, n2, nmod, nmax
 
-    nmax = size(p0)-1
-    c1 = cos(theta)
-    s1 = sin(theta)
-    c2 = c1*c1 - s1*s1
-    s2 = 2.0_dp * c1 * s1
-    do n=2, nmax
-      p0(n) = 0.0_dp
-      if (mod(n,2) == 0) then
-        c = 1.0_dp
-        s = 0.0_dp
-      else
-        c = c1
-        s = s1
-      end if
-      do l=0, n/2 
-        p0(n) = p0(n) + ank(n,l) * c
-        ct = c2 * c - s2 * s
-        s  = s2 * c + c2 * s
-        c = ct
-      end do
-    end do
+     nmax = size(p0)-1
+     do n=2, nmax
+      n2 = n/2
+       nmod = n - n2*2
+       p0(n) = 0.0_dp
+       do l=0, n2
+         k = 2*l + nmod ! n even: k=2*l, n odd: k=2*l+1
+         p0(n) = p0(n) + ank(n,l)*cos(k*theta)
+       end do
+     end do
 
   end subroutine alff_calcp0
 
@@ -292,32 +280,18 @@ contains
     real(kind=dp), intent(in) :: theta
     real(kind=dp), dimension(0:), intent(inout) :: p1
 
-    integer(kind=i4b) :: n, l, k, nmod, nmax
-    real(kind=dp) :: sqrtnnr, c1, s1, c2, s2, c, s, ct
+    integer(kind=i4b) :: n, l, k, n2, nmod, nmax
+    real(kind=dp) :: sqrtnnr
 
     nmax = size(p1)-1
-    c1 = cos(theta)
-    s1 = sin(theta)
-    c2 = c1*c1 - s1*s1
-    s2 = 2.0_dp * c1 * s1
     do n=3, nmax
+      n2 = n/2
+      nmod = n - n2*2
       p1(n) = 0.0_dp
       sqrtnnr = 1.0_dp/sqrt(n*(n+1.0_dp))
-      if (mod(n,2) == 0) then
-        c = 1.0_dp
-        s = 0.0_dp
-        nmod = 0
-      else
-        c = c1
-        s = s1
-        nmod = 1
-      end if
-      do l=0, n/2
+      do l=0, n2
         k = 2*l + nmod ! n even: k=2*l, n odd: k=2*l+1
-        p1(n) = p1(n) + ank(n,l) * (2*l+nmod) * sqrtnnr * s
-        ct = c2 * c - s2 * s
-        s  = s2 * c + c2 * s
-        c = ct
+        p1(n) = p1(n) + ank(n,l)*k*sqrtnnr*sin(k*theta)
       end do
     end do
 
