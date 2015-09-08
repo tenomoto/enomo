@@ -12,6 +12,7 @@ module kind_module
 
   integer, parameter, public :: sp = kind(1.0)
   integer, parameter, public :: dp = kind(1.0d0)
+  integer, parameter, public :: qp = kind(1.0q0)
 
 ! Symbolic names for kind types of single- and double-precision complexes:
 

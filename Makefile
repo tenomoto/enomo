@@ -1,15 +1,17 @@
 PREFIX = ${HOME}/local
-FC = g95
-#FC = gfortran-mp-4.5
-NAME = enomo
-FFLAGS = -O2 -fendian=big -I/opt/local/include
-#FFLAGS = -O2 -fconvert=big-endian -I/opt/local/include
+#FC = g95
+#FFLAGS = -O2 -fendian=big -I/opt/local/include
+#NAME = enomo
+FC = gfortran-mp-5
+FFLAGS = -O2 -fconvert=big-endian -I/opt/local/include
+NAME = enomo_gfortran
 AR = ar
 ARFLAGS = -cru
 TARGET = lib${NAME}.a
 SRC = \
 air_module.f90 \
 alf_module.f90 \
+alfq_module.f90 \
 alff_module.f90 \
 alfx_module.f90 \
 besttrack_module.f90 \
@@ -18,6 +20,7 @@ confmap_module.f90 \
 earth_module.f90 \
 fft_module.f90 \
 glatwgt_module.f90 \
+glatwgtq_module.f90 \
 grads_module.f90 \
 grmsm_sig_module.f90 \
 grmsm_sfc_module.f90 \
@@ -76,6 +79,7 @@ clean :
 
 air_module.o : kind_module.o math_module.o
 alf_module.o : kind_module.o math_module.o glatwgt_module.o
+alfq_module.o : kind_module.o math_module.o glatwgtq_module.o
 alff_module.o : kind_module.o math_module.o integer_module.o glatwgt_module.o alf_module.o
 alfx_module.o : kind_module.o math_module.o xreal_module.o glatwgt_module.o alf_module.o
 besttrack_module.o : kind_module.o time_module.o string_module.o
@@ -84,6 +88,7 @@ confmap_module.o : kind_module.o math_module.o sphere_module.o
 earth_module.o : kind_module.o math_module.o
 fft_module.o : kind_module.o
 glatwgt_module.o : kind_module.o math_module.o machine_module.o
+glatwgtq_module.o : kind_module.o math_module.o machine_module.o
 grads_module.o : kind_module.o string_module.o
 grmsm_sig_module.o : kind_module.o sigma_module.o
 grmsm_sfc_module.o : kind_module.o
