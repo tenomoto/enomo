@@ -417,7 +417,6 @@ contains
   end subroutine alfmx
 
   subroutine alfx_test(ntrunc,nlat,un)
-    use math_module, only: rad2deg=>math_rad2deg
     use xreal_module, only: xreal_type, assignment(=)
     use glatwgt_module, only: glatwgt_calc
 
