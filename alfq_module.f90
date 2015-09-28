@@ -1,7 +1,7 @@
 module alfq_module
 ! calculates normalised associated Legendre functions
 ! using three point recurrence
-  use kind_module, only: i4b, dp, qp
+  use kind_module, only: i4b, qp
   implicit none
   private
 
@@ -194,16 +194,23 @@ contains
 
   end subroutine alfq_calcpn
 
-  function alfq_checksum(wgt,pj) result(x)
+  function alfq_checksum(wgt,pj) result(s)
 
     real(kind=qp), dimension(:), intent(in) :: wgt
     real(kind=qp), dimension(:), intent(in) :: pj
 
-    real(kind=qp) :: x
-    integer(kind=i4b) :: jmaxh
+    real(kind=qp) :: y, c, s, t
+    integer(kind=i4b) :: j, jmaxh
 
     jmaxh = size(pj)
-    x = 2.0_qp*sum(wgt(1:jmaxh)*pj(:)*pj(:))
+    c = 0.0_qp
+    s = 0.0_qp
+    do j = 1, jmaxh
+      y = 2.0_qp * wgt(j) * pj(j) * pj(j) - c
+      t = s + y
+      c = (t - s) - y
+      s = t
+    end do
 
   end function alfq_checksum
   

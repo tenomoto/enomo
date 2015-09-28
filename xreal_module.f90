@@ -7,22 +7,31 @@ module xreal_module
 !     exponent of floating point numbers. J. Geodesy,
 !     doi:10.1007//s00190-011-0519-2
 
-  use kind_module, only: dp, i4b
+  use kind_module, only: dp, qp, i4b
   implicit none
   private
 
-  integer(kind=i4b), parameter :: ind = 960, indh = ind/2
+  integer(kind=i4b), parameter :: &
+    ind = 960, indh = ind/2, indq = 1600, indqh = indq/2
   real(kind=dp), parameter, public :: &
     xreal_big  = 2.0_dp**ind,  xreal_bigi  = 2.0_dp**(-ind), &
     xreal_bigs = 2.0_dp**indh, xreal_bigsi = 2.0_dp**(-indh)
+  real(kind=qp), parameter, public :: &
+    xreal_bigq  = 2.0_qp**indq,  xreal_bigqi  = 2.0_qp**(-indq), &
+    xreal_bigqs = 2.0_qp**indqh, xreal_bigqsi = 2.0_qp**(-indqh)
 
   type xreal_type
     real(kind=dp) :: p     ! principal component
     integer(kind=i4b) :: i ! auxiliary index
   end type xreal_type
 
+  type xreal_quad_type
+    real(kind=qp) :: p     ! principal component
+    integer(kind=i4b) :: i ! auxiliary index
+  end type xreal_quad_type
+
   interface assignment(=)
-    module procedure x_assign_f, f_assign_x
+    module procedure x_assign_f, f_assign_x, xq_assign_fq, fq_assign_xq
   end interface
 
   interface operator(+)
@@ -34,7 +43,7 @@ module xreal_module
   end interface
 
   interface operator(*)
-    module procedure xmul, fx
+    module procedure xmul, fx, xmulq, fxq
   end interface
 
   interface operator(/)
@@ -69,12 +78,12 @@ module xreal_module
     module procedure xle
   end interface
 
-  public :: xreal_type, xreal_norm, xreal_fxpgy, xreal_base10, xreal_test, &
+  public :: xreal_type, xreal_quad_type, xreal_norm, xreal_normq, xreal_fxpgy, xreal_fxpgyq, xreal_base10, xreal_test, &
     assignment(=), operator(+), operator(-), operator(*), operator(/), &
     operator(**), operator(==), operator(/=), operator(>), operator(>=), &
     operator(<), operator(<=)
-  private :: x_assign_f, f_assign_x ,xmul, xdiv, xadd, xsub, &
-    xpowi, xeq, xne, xgt, xge, xlt, xle
+  private :: x_assign_f, f_assign_x, xq_assign_fq, fq_assign_xq, xmul, xmulq, xdiv, xadd, xsub, &
+    xpowi, xeq, xne, xgt, xge, xlt, xle, fx, fxr, fxq
 
 contains
 
@@ -102,6 +111,30 @@ contains
 
   end subroutine f_assign_x
 
+  subroutine xq_assign_fq(x,f)
+    type(xreal_quad_type), intent(out) :: x
+    real(kind=qp), intent(in) :: f
+
+    x%p = f
+    x%i = 0
+
+  end subroutine xq_assign_fq
+
+  subroutine fq_assign_xq(g,x)
+    real(kind=qp), intent(out) :: g
+    type(xreal_quad_type), intent(in) :: x
+
+    select case(x%i)
+      case(0)
+        g = x%p
+      case(:-1) ! underflow
+        g = x%p*xreal_bigqi
+      case(1:)  ! overflow
+        g = x%p*xreal_bigq
+    end select
+
+  end subroutine fq_assign_xq
+
   function xreal_norm(x) result(y)
     type(xreal_type), intent(in) :: x
     type(xreal_type) :: y
@@ -120,6 +153,25 @@ contains
     end if
 
   end function xreal_norm
+
+  function xreal_normq(x) result(y)
+    type(xreal_quad_type), intent(in) :: x
+    type(xreal_quad_type) :: y
+
+    real(kind=qp) :: w
+
+    w = abs(x%p)
+    if (w>=xreal_bigqs) then
+      y%p = x%p*xreal_bigqi
+      y%i = x%i + 1
+    else if (w<xreal_bigqsi) then
+      y%p = x%p*xreal_bigq
+      y%i = x%i - 1
+    else
+      y = x
+    end if
+
+  end function xreal_normq
 
   function xmul(x,y) result(z)
     type(xreal_type), intent(in) :: x, y
@@ -144,6 +196,31 @@ contains
     z = xreal_norm(z)
 
   end function fx
+
+
+  function xmulq(x,y) result(z)
+    type(xreal_quad_type), intent(in) :: x, y
+    type(xreal_quad_type) :: s, z
+
+    z = xreal_normq(x)
+    s = xreal_normq(y)
+    z%p = z%p * s%p
+    z%i = z%i + s%i
+    z = xreal_normq(z)
+
+  end function xmulq
+
+  function fxq(f,x) result(z)
+    real(kind=qp), intent(in) :: f
+    type(xreal_quad_type), intent(in) :: x
+    type(xreal_quad_type) :: z
+
+    z = xreal_normq(x)
+    z%p = f * z%p
+    z%i = z%i
+    z = xreal_normq(z)
+
+  end function fxq
 
   function xdiv(x,y) result(z)
     type(xreal_type), intent(in) :: x, y
@@ -226,6 +303,35 @@ contains
     z = xreal_norm(z)
 
   end function xreal_fxpgy
+
+  function xreal_fxpgyq(f,x,g,y) result(z)
+    real(kind=qp), intent(in) :: f, g
+    type(xreal_quad_type), intent(in) :: x, y
+    type(xreal_quad_type) :: z
+
+    integer(kind=i4b) :: id
+
+    id = x%i - y%i
+    select case(id)
+      case(0)
+        z%p = f*x%p + g*y%p
+        z%i = x%i
+      case(1)
+        z%p = f*x%p + g*xreal_bigqi*y%p
+        z%i = x%i
+      case(-1)
+        z%p = f*xreal_bigqi*x%p + g*y%p
+        z%i = y%i
+      case(2:)
+        z%p = f*x%p
+        z%i = x%i
+      case(:-2)
+        z%p = g*y%p
+        z%i = y%i
+    end select
+    z = xreal_normq(z)
+
+  end function xreal_fxpgyq
 
   function xadd(x,y) result(z)
     type(xreal_type), intent(in) :: x, y

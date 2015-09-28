@@ -194,16 +194,23 @@ contains
 
   end subroutine alf_calcpn
 
-  function alf_checksum(wgt,pj) result(x)
+  function alf_checksum(wgt,pj) result(s)
 
     real(kind=dp), dimension(:), intent(in) :: wgt
     real(kind=dp), dimension(:), intent(in) :: pj
 
-    real(kind=dp) :: x
-    integer(kind=i4b) :: jmaxh
+    real(kind=dp) :: y, c, s, t
+    integer(kind=i4b) :: j, jmaxh
 
     jmaxh = size(pj)
-    x = 2.0_dp*sum(wgt(1:jmaxh)*pj(:)*pj(:))
+    s = 0.0_dp
+    c = 0.0_dp
+    do j = 1, jmaxh
+      y = 2.0_dp * wgt(j) * pj(j) * pj(j) - c
+      t = s + y
+      c = (t - s) - y
+      s = t
+    end do
 
   end function alf_checksum
   

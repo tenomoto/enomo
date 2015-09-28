@@ -14,6 +14,7 @@ alf_module.f90 \
 alfq_module.f90 \
 alff_module.f90 \
 alfx_module.f90 \
+alfxq_module.f90 \
 besttrack_module.f90 \
 calendar_module.f90 \
 confmap_module.f90 \
@@ -68,9 +69,6 @@ uninstall :
 	rm -f ${PREFIX}/lib/${TARGET}
 	rm -f ${PREFIX}/include/${NAME}/*.mod
 
-test : test.o ${TARGET}
-	${FC}  $< ./${TARGET} -o test
-
 clean :
 	rm -f ${TARGET} ${OBJ} ${MOD}
 
@@ -82,6 +80,7 @@ alf_module.o : kind_module.o math_module.o glatwgt_module.o
 alfq_module.o : kind_module.o math_module.o glatwgtq_module.o
 alff_module.o : kind_module.o math_module.o integer_module.o glatwgt_module.o alf_module.o
 alfx_module.o : kind_module.o math_module.o xreal_module.o glatwgt_module.o alf_module.o
+alfxq_module.o : kind_module.o math_module.o xreal_module.o glatwgtq_module.o alfq_module.o
 besttrack_module.o : kind_module.o time_module.o string_module.o
 calendar_module.o : kind_module.o string_module.o
 confmap_module.o : kind_module.o math_module.o sphere_module.o
