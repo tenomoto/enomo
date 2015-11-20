@@ -1,0 +1,7 @@
+This directory contains programs used to validate algorithms to compute
+associated Legendre functions using alf*_module.
+
+checksum: conduct synthesis-analysis test
+ortho: test orthogonality
+rpie: check relative precision and identity error
+spot: display values for selected n and m
