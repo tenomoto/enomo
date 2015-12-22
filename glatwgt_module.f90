@@ -49,7 +49,6 @@ contains
 
     call legendre_init()
 
-!    x0 = pih - pih/(nlat + 1)
     x0 = pih - pih/nlat
     call newton(x0, x(nlath), w(nlath))
     x0 = 3.0_dp*x(nlath) - pi
