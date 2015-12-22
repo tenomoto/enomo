@@ -11,7 +11,7 @@ module sigma_module
   real(kind=dp), dimension(:), allocatable, private :: dsr
   integer(kind=i4b) :: nz
 
-  public :: sigma_init, sigma_half2full, sigma_omega, sigma_omega_afes, sigma_clean
+  public :: sigma_init, sigma_half2full, sigma_dot, sigma_omega, sigma_omega_afes, sigma_clean
 
 contains
 
@@ -53,6 +53,34 @@ contains
     deallocate(sigma_half,sigma_full,sigma_dsigma,sigma_a,sigma_b,dsr)
 
   end subroutine sigma_clean
+
+  subroutine sigma_dot(u,v,d,ps,dlnpsx,dlnpsy,sdot)
+! diagnose dsigma/dt NB. sdot is defined at half levels
+    implicit none
+
+    real(kind=dp), dimension(:,:,:), intent(in) :: u, v, d
+    real(kind=dp), dimension(:,:), intent(in) :: ps, dlnpsx, dlnpsy
+    real(kind=dp), dimension(:,:,0:), intent(inout) :: sdot
+
+    real(kind=dp), dimension(nz) :: dsum
+    integer(kind=i4b) :: nx, ny, i, j, k
+
+    nx = size(u,1)
+    ny = size(u,2)
+    do j=1, ny
+      do i=1, nx 
+        dsum(:) = 0.0_dp ! sdot(0) = sdot(nz) = 0
+        do k=1, nz
+          dsum(k) = dsum(k) + (d(i,j,k) +  &
+            u(i,j,k)*dlnpsx(i,j) + v(i,j,k)*dlnpsy(i,j))*sigma_dsigma(k)
+        end do
+        do k=1, nz-1
+          sdot(i,j,k) = sigma_half(k)*dsum(nz) - dsum(k)
+        end do
+      end do
+    end do 
+
+  end subroutine sigma_dot
 
   subroutine sigma_omega(u,v,d,ps,dlnpsx,dlnpsy,omega)
 ! diagnose omega using energy conserving vertical integral (AFES manual)
