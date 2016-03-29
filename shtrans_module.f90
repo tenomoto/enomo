@@ -16,7 +16,7 @@ module shtrans_module
   logical, private :: lyrev
 
   public :: shtrans_init, shtrans_clean, shtrans_analysis, shtrans_synthesis, &
-    shtrans_transf, shtrans_transb, shtrans_hoskinsfilter, shtrans_truncate
+    shtrans_transf, shtrans_transb, shtrans_hoskinsfilter, shtrans_truncate, shtrans_test
 
   private :: checkerror, checkval
 
@@ -246,5 +246,25 @@ contains
              name, " max=", maxval(x), " at ", maxloc(x)
 
   end subroutine checkval
+
+  subroutine shtrans_test(nx, ny, nt)
+    implicit none
+
+    integer(kind=i4b), intent(in) :: nx, ny, nt
+    real(kind=dp), dimension(nx, ny, 1) :: g
+    real(kind=dp), dimension(ny, ny, 1) :: a, b
+
+    shtrans_verbose = .true.
+
+    call shtrans_init(nx, ny, nt)
+
+! globally uniform value
+    g = 1.0_dp
+    call shtrans_analysis(g, a, b)
+    call shtrans_synthesis(a, b, g)
+
+    call shtrans_clean()
+
+  end subroutine shtrans_test
 
 end module shtrans_module

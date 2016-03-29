@@ -2,10 +2,10 @@
 FC = gfortran-mp-5
 FFLAGS = -O2 -fconvert=big-endian -I../
 CC = gfortran-mp-5
-LDFLAGS = -L..
+LDFLAGS = -L.. -L${HOME}/local/lib
 LIBNAME = enomo_gfortran
-LDLIBS = -l$(LIBNAME)
-PROGS = test_alf test_alff test_alfq test_alfx test_alfxq test_glatwgt test_glatwgtq test_sum test_xreal
+LDLIBS = -l$(LIBNAME) -lspherepack_double_gfortran
+PROGS = test_alf test_alff test_alfq test_alfx test_alfxq test_glatwgt test_glatwgtq test_sum test_xreal test_shtrans
 
 all : $(PROGS)
 
