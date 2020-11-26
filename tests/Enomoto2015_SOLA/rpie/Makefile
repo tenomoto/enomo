@@ -1,7 +1,7 @@
 FC = mpif90
-FFLAGS = -O2 -I${HOME}/local/include/enomo_gfortran
-LDFLAGS = -L${HOME}/local/lib
-LIBS = -lenomo_gfortran
+FFLAGS = -O2 -I../../..
+LDFLAGS = -L../../..
+LIBS = -lenomo
 TARGET = rpie2
 
 $(TARGET) : $(TARGET).o

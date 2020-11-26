@@ -1,7 +1,7 @@
-FC = gfortran-mp-5
-FFLAGS = -O3 -I${HOME}/local/include/enomo_gfortran
-LDFLAGS = -L${HOME}/local/lib
-LIBS = -lenomo_gfortran
+FC = gfortran
+FFLAGS = -O3 -I../../..
+LDFLAGS = -L../../..
+LIBS = -lenomo
 TARGET = calc ortho
 
 all : $(TARGET)

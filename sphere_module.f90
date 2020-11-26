@@ -41,12 +41,8 @@ contains
     real(kind=dp), intent(in) :: xd, yd, zd, lon, lat
     real(kind=dp), intent(out) :: u, v
 
-    u = cos(lon)*yd - sin(lon)*xd
-    if (abs(lat) == pih) then
-      v = -cos(lon)*xd-sin(lon)*yd ! omitted division by sin(pi/2) = 1
-    else
-      v = zd/cos(lat)
-    end if
+    u = cos(lon) * yd - sin(lon) * xd
+    v = -(cos(lon) * xd + sin(lon) * yd) * sin(lat) + zd * cos(lat)
 
   end subroutine sphere_xyz2uv
 

@@ -1,10 +1,8 @@
 PREFIX = ${HOME}/local
-#FC = g95
-#FFLAGS = -O2 -fendian=big -I/opt/local/include
-#NAME = enomo
-FC = gfortran-mp-5
-FFLAGS = -O2 -fconvert=big-endian -I/opt/local/include
-NAME = enomo_gfortran
+FC = gfortran
+FFTWPATH = /opt/local
+FFLAGS = -O2 -fconvert=big-endian -I${FFTWPATH}/include
+NAME = enomo
 AR = ar
 ARFLAGS = -cru
 TARGET = lib${NAME}.a

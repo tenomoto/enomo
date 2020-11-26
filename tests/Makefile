@@ -1,11 +1,11 @@
 #NAME = enomo
-FC = gfortran-mp-5
+FC = gfortran
 FFLAGS = -O2 -fconvert=big-endian -I../
-CC = gfortran-mp-5
+CC = gfortran
 LDFLAGS = -L.. -L${HOME}/local/lib
-LIBNAME = enomo_gfortran
-LDLIBS = -l$(LIBNAME) -lspherepack_double_gfortran
-PROGS = test_alf test_alff test_alfq test_alfx test_alfxq test_glatwgt test_glatwgtq test_sum test_xreal test_shtrans
+LIBNAME = enomo
+LDLIBS = -l$(LIBNAME) -lspherepack
+PROGS = test_alf test_alff test_alfq test_alfx test_alfxq test_glatwgt test_glatwgtq test_sum test_xreal test_shtrans test_gaqd
 
 all : $(PROGS)
 

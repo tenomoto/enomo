@@ -21,7 +21,7 @@ contains
 ! lapack related variables
     integer(kind=i4b) :: info
     integer(kind=i4b), dimension(size(bmatrix,1)) :: ipiv
-    real(kind=dp) :: work_dummy
+    real(kind=dp), dimension(1) :: work_dummy
     real(kind=dp), dimension(:), allocatable :: work
 
     nz = size(bmatrix,1)
@@ -33,7 +33,7 @@ contains
     end do
 
     call dgetri(nz,invamatrix,nz,ipiv,work_dummy,-1,info)
-    allocate(work(int(work_dummy)))
+    allocate(work(int(work_dummy(1))))
 
     f = (1.0_dp/earth_radius*beta*dt)**2 ! 1/a^2 (beta dt)^2
 

@@ -108,7 +108,7 @@ print *, j, "/", jmax, j*100.0_dp/jmax
     end do
     deallocate(rbuf)
     do j = 1, nlath 
-      write(unit=oun,fmt=*), j, glat(j)*rad2deg, (e(i,j), i = 1, ne)
+      write(unit=oun,fmt=*) j, glat(j)*rad2deg, (e(i,j), i = 1, ne)
     end do
     deallocate(e)
   end if
