@@ -200,7 +200,7 @@ contains
 
     m = size(a,1)
     n = size(a,2)
-    a(ntrunc+2:m,ntrunc+2:n,:) = 0.0d0
+    a(1:m,ntrunc+2:n,:) = 0.0d0
 
   end subroutine shtrans_truncate
 
